@@ -4,11 +4,15 @@ library(data.table)
 
 shinyServer(function(input, output, session) {
 
-  ## Datatable with selected country
+  ## Prevalences with selected country
   prevalences <- reactive({
     prev %>% 
       filter(location_name == input$location) %>% 
-      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% ## Can be also dynamic
+      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme),
+             #  population (Armeni 15-74 or Benjafield 30-69) depending on OSA 
+             pop_both = ifelse(input$osa_selected == "Armeni et al.",  pop_1574_both, pop_3069_both),
+             pop_female= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_female, pop_3069_female),
+             pop_male= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_male, pop_3069_male)) %>% ## Can be also dynamic
       data.frame()
   })
   
@@ -56,7 +60,6 @@ shinyServer(function(input, output, session) {
   
   ## Core of calculus part 1
   calc_total = reactive({
-    ## TODO add slapnea prevalence 
     ## TODO add PAF calculation
     ## TODO add money index correction
     ## TODO add mortality to calc
@@ -69,12 +72,10 @@ shinyServer(function(input, output, session) {
     d %>% 
       filter(location_name == input$location) %>%
       mutate(
-        # Select which prevalence to use
-        prevalence = prevalence, #ifelse(is.na(ihme), prevalence_base_italy, ihme),
         ## PAF
-        # TODO here PAF calculation
+        # TODO here PAF calculation, ottaako huomioon naisten ja miesten populaatiot?
         ## Prevalents per conditions
-        prevalent_cases = prevalence * pop_both,
+        prevalent_cases = prevalence * pop_both, 
         prevalent_cases_influenced_osa = PAF * prevalent_cases,
         ## Costs per conditions
         direct_cost = prevalent_cases_influenced_osa * annual_direct_healthcare_cost,
@@ -93,7 +94,7 @@ shinyServer(function(input, output, session) {
     calc = reactive({
       ## OSA-table and re-calculus
       dosa <- osa_table()
-      ##  Re-calculate prevalences per gender by slider inputs
+      ##  Re-calculate sleep apnea prevalences per gender by slider inputs
       dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
       dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
       ## TODO check these correction values with comments
@@ -104,21 +105,21 @@ shinyServer(function(input, output, session) {
       
       ## Calculate costs (total & patient) per locations
       calc_total() %>%
-      group_by(location_name, pop_female, pop_male) %>%
-      summarise(direct_cost = sum(direct_cost, na.rm = T),
-                direct_non_healthcare_cost = sum(direct_non_healthcare_cost, na.rm = T),
-                productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
-      mutate(
-        ## Absolute values with separated moderate/severe calculation
-        absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Female"]) + (pop_female * dosa$rate[dosa$var == "Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Male"]) + (pop_male * dosa$rate[dosa$var == "Severe" & dosa$gender == "Male"])),
-        absolute_value_mild = ( pop_female * dosa$rate[dosa$var == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$var == "Mild" & dosa$gender == "Male"] ),
-        ## Costs per patients
-        patient_direct_cost = direct_cost / absolute_value_severe_moderate,
-        patient_nonhealthcare_cost = direct_non_healthcare_cost / absolute_value_severe_moderate,
-        patient_productivity_cost = productivity_lost_cost / absolute_value_severe_moderate,
-        patient_total_cost = patient_direct_cost + patient_nonhealthcare_cost + patient_productivity_cost
-      ) -> dplot
-
+        group_by(location_name, pop_female, pop_male) %>%
+        summarise(direct_cost = sum(direct_cost, na.rm = T),
+                  direct_non_healthcare_cost = sum(direct_non_healthcare_cost, na.rm = T),
+                  productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
+        mutate(
+          ## Absolute values with separated moderate/severe calculation
+          absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Female"]) + (pop_female * dosa$rate[dosa$var == "Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Male"]) + (pop_male * dosa$rate[dosa$var == "Severe" & dosa$gender == "Male"])),
+          absolute_value_mild = ( pop_female * dosa$rate[dosa$var == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$var == "Mild" & dosa$gender == "Male"] ),
+          ## Costs per patients
+          patient_direct_cost = direct_cost / absolute_value_severe_moderate,
+          patient_nonhealthcare_cost = direct_non_healthcare_cost / absolute_value_severe_moderate,
+          patient_productivity_cost = productivity_lost_cost / absolute_value_severe_moderate,
+          patient_total_cost = patient_direct_cost + patient_nonhealthcare_cost + patient_productivity_cost
+        ) -> dplot
+      
     return(dplot)
   })
   
@@ -153,7 +154,7 @@ shinyServer(function(input, output, session) {
   ## For downloading CSV file
   makeQuery <- reactive({
     calc_total() %>% 
-      select(location_name, cause_name, condition, PAF, prevalence, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs)
+      select(location_name, cause_name, condition, pop_both, PAF, prevalence, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs)
   })
   output$downloadData <- downloadHandler(
     filename = function() {
@@ -231,13 +232,41 @@ shinyServer(function(input, output, session) {
               legend.position = "right") +
         labs(x="", fill="", subtitle = "Per patient")
       
-      p1 / p2
+     p1 / p2
+     
     }
   })
   
   ## Plot output
   output$plot = renderPlot(width = 450 , height = 700, {
     infograph()
+  })
+  
+  infograph2 <- reactive({
+    ## Population info
+    dpop <- popu_info %>% 
+      filter(location_name == input$location) %>% 
+      mutate(
+        Population = pop_both,
+        Selected = pop_both - pop_1574_both,
+        Affected = (input$slapnea_prevalence_male / 100) * pop_male + (input$slapnea_prevalence_female / 100) * pop_female) %>%
+      select(location_name, Population, Selected, Affected) %>% 
+      pivot_longer(c(Population, Selected, Affected))
+    
+    p3 <- ggplot(data = dpop) +
+      geom_bar(aes(x=reorder(name, -value), y=value, fill = name), stat = "identity") +
+      geom_label(aes(x=reorder(name, -value), y=value, label = paste0(name, " \n ", format(round(value,-4), big.mark = ",")))) +
+      scale_fill_brewer(palette="Set3") +
+      scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
+      labs(x="", y="") +
+      hrbrthemes::theme_ipsum() +
+      theme(legend.position = "none") 
+    
+    p3
+  })
+  ## Population plot
+  output$plot2 = renderPlot(width = 450 , height = 700, {
+    infograph2()
   })
 
   

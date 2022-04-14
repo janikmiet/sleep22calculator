@@ -3,6 +3,8 @@ library(tidyr)
 library(duckdb)
 library(ggplot2)
 
+options(scipen = 999)
+
 ## DATA ----
 loc <- "Italy"
 
@@ -24,6 +26,7 @@ tbl(con, "prevalences") %>%
   mutate(
     # Select prevalence which to use
     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
+    pop_both = pop_1574_both, ## This is going to be dynamic selection
     ## Prevalents per conditions
     prevalent_cases = prevalence * pop_both, ## Taudin prevalenssi * populaatio, ok
     prevalent_cases_influenced_osa = PAF * prevalent_cases, ## PAF * prevalent_cases, ok
@@ -40,7 +43,7 @@ tbl(con, "prevalences") %>%
 
 ## Calculate total & patient costs per locations
 slapnea_cost1 %>% 
-  group_by(location_name, pop_female, pop_male) %>% 
+  group_by(location_name, pop_1574_female, pop_1574_male) %>% 
   summarise(
     ## Sums of costs
     direct_cost = sum(direct_cost, na.rm = T),
@@ -48,6 +51,8 @@ slapnea_cost1 %>%
     productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)
     )  %>% 
   mutate(
+    pop_female = pop_1574_female, ## these are dynamic in app
+    pop_male = pop_1574_male,
     ## Absolute values for dividing the cost per patient
     absolute_value_severe_moderate = ( (pop_female * osa$rate[osa$var == "Moderate" & osa$gender == "Female"]) + (pop_female * osa$rate[osa$var == "Severe" & osa$gender == "Female"]) + (pop_male * osa$rate[osa$var == "Moderate" & osa$gender == "Male"]) + (pop_male * osa$rate[osa$var == "Severe" & osa$gender == "Male"])), ## ok
     # absolute_value_mild = ( pop_female * osa$rate[osa$var == "Mild" & osa$gender == "Female"]) + (pop_male * osa$rate[osa$var == "Mild" & osa$gender == "Male"] ), ## ok
@@ -93,7 +98,7 @@ label_title <- paste0("Total cost ", format(round(sum(dat$value), -4), big.mark 
 # Make the plot
 p1 <- ggplot(dat, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=name)) +
   geom_rect() +
-  geom_label( x=3.5, aes(y=labelPosition, label=label), size=4) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label), size=3) +
   scale_fill_brewer(palette="Set2") +
   coord_polar(theta="y") +
   xlim(c(2, 4)) +
@@ -124,12 +129,34 @@ p2 <- ggplot(data = dplot) +
           legend.position = "bottom") +
     labs(x="", fill="", subtitle = "Per patient")
 
-library(patchwork)
-p1 / p2
 
 ## AFFECTED POPULATION PLOT ----
+tbl(con, "popu_info") %>% 
+  left_join(tbl(con, "pop"), by = "location_name") %>% 
+  collect() -> popu_info
 
+dpop <- popu_info %>% 
+  filter(location_name == loc) %>% 
+  mutate(
+    Population = pop_both,
+    Selected = pop_both - pop_1574_both,
+    Affected = 0.212 * pop_male + 0.124 * pop_female) %>% 
+  select(location_name, Population, Selected, Affected) %>% 
+  pivot_longer(c(Population, Selected, Affected))
 
+p3 <- ggplot(data = dpop) +
+  geom_bar(aes(x=reorder(name, -value), y=value, fill = name), stat = "identity") +
+  geom_label(aes(x=reorder(name, -value), y=value, label = paste0(name, " \n ", format(round(value,-4), big.mark = ",")))) +
+  scale_fill_brewer(palette="Set3") +
+  scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
+  labs(x="", y="") +
+  hrbrthemes::theme_ipsum() +
+  theme(legend.position = "none") 
 
+## Put together -----
+
+library(patchwork)
+p1 / p2
+(p1 + p2) / p3
 ## DB DISCONNECT -----
 dbDisconnect(con)

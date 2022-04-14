@@ -8,17 +8,8 @@ library(DT)
 options(scipen = 999)
 
 con <- dbConnect(duckdb::duckdb(), dbdir="sleep22_shiny.duckdb", read_only=TRUE)
-# con <- dbConnect(duckdb::duckdb(), dbdir="sleep22_calculator.duckdb", read_only=TRUE)
 dbListTables(conn = con)
 # dbListFields(con, "prevalences")
-
-## Input table testiin
-# tbl(con, "prevalences") %>% 
-#   # filter(location_name == "Finland") %>% 
-#   # select(location_name, condition, type, ihme, prevalence_base_italy, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost) %>% 
-#   mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% 
-#   # select(location_name, condition, type, prevalence, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost) %>% 
-#   collect() -> df
 
 ## Full table prevalences
 prev <- tbl(con, "prevalences") %>% 
@@ -37,6 +28,11 @@ tbl(con, "prevalences") %>%
   summarise(1) %>% 
   collect() -> locations
 locations <- sort(locations$location_name)
+
+## Population info
+tbl(con, "popu_info") %>% 
+  left_join(tbl(con, "pop"), by = "location_name") %>% 
+  collect() -> popu_info
 
 duckdb::dbDisconnect(con)
 
