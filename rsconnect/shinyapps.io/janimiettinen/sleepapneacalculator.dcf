@@ -1,0 +1,11 @@
+name: sleepapneacalculator
+title: SleepApneaCalculator
+username:
+account: janimiettinen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6081013
+bundleId: 5793886
+url: https://janimiettinen.shinyapps.io/sleepapneacalculator/
+when: 1649850586.44578
+lastSyncTime: 1649850586.44579
