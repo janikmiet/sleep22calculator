@@ -34,6 +34,11 @@ tbl(con, "popu_info") %>%
   left_join(tbl(con, "pop"), by = "location_name") %>% 
   collect() -> popu_info
 
+## Money index
+tbl(con, "money_correction") %>% 
+  collect() -> money_correction
+
+## Disconnect
 duckdb::dbDisconnect(con)
 
 rm(list=c("con"))

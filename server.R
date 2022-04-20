@@ -12,7 +12,7 @@ shinyServer(function(input, output, session) {
              #  population (Armeni 15-74 or Benjafield 30-69) depending on OSA 
              pop_both = ifelse(input$osa_selected == "Armeni et al.",  pop_1574_both, pop_3069_both),
              pop_female= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_female, pop_3069_female),
-             pop_male= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_male, pop_3069_male)) %>% ## Can be also dynamic
+             pop_male= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_male, pop_3069_male)) %>% 
       data.frame()
   })
   
@@ -61,14 +61,13 @@ shinyServer(function(input, output, session) {
   ## Core of calculus part 1
   calc_total = reactive({
     ## TODO add PAF calculation
-    ## TODO add money index correction
     ## TODO add mortality to calc
 
     ## Get original data and enchance it with hot table
     d <- prevalences() %>% 
       rows_update(hot_to_r(input$hot), by = "condition")
     
-    # Calculate prevalent cases and costs per conditions
+    ## Calculate prevalent cases and costs per conditions
     d %>% 
       filter(location_name == input$location) %>%
       mutate(
@@ -87,6 +86,18 @@ shinyServer(function(input, output, session) {
              productivity_lost_cost = ifelse(is.na(productivity_lost_cost), 0 , productivity_lost_cost),
              total_costs = direct_cost + direct_non_healthcare_cost + productivity_lost_cost) -> dplot
     
+    ## Make money correction
+    if(input$money_index == "EuroStat"){
+      dplot <- dplot %>% 
+        left_join(money_correction, by = "location_name") %>% 
+        mutate(corrected = ifelse(is.na(index), FALSE, TRUE),
+               index = ifelse(is.na(index), 1, index),
+               direct_cost = direct_cost * index,
+               direct_non_healthcare_cost = direct_non_healthcare_cost * index,
+               productivity_lost_cost = productivity_lost_cost * index,
+               total_costs = total_costs * index) 
+    }
+    
     return(dplot)
     })
     
@@ -97,7 +108,7 @@ shinyServer(function(input, output, session) {
       ##  Re-calculate sleep apnea prevalences per gender by slider inputs
       dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
       dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
-      ## TODO check these correction values with comments
+      ## TODO CHECK these correction values with comments
       dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
       dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
       dosa$rate[dosa$gender == "Female" & dosa$var=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)

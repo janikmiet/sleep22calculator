@@ -129,6 +129,7 @@ p2 <- ggplot(data = dplot) +
           legend.position = "bottom") +
     labs(x="", fill="", subtitle = "Per patient")
 
+p2
 
 ## AFFECTED POPULATION PLOT ----
 tbl(con, "popu_info") %>% 
@@ -140,7 +141,7 @@ dpop <- popu_info %>%
   mutate(
     Population = pop_both,
     Selected = pop_both - pop_1574_both,
-    Affected = 0.212 * pop_male + 0.124 * pop_female) %>% 
+    Affected = 0.212 * pop_male + 0.124 * pop_female) %>% ## Numbers are random here, in application we use OSA-sliders
   select(location_name, Population, Selected, Affected) %>% 
   pivot_longer(c(Population, Selected, Affected))
 
@@ -152,6 +153,8 @@ p3 <- ggplot(data = dpop) +
   labs(x="", y="") +
   hrbrthemes::theme_ipsum() +
   theme(legend.position = "none") 
+
+p3
 
 ## Put together -----
 
