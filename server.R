@@ -219,7 +219,7 @@ shinyServer(function(input, output, session) {
         scale_fill_brewer(palette="Set2") +
         coord_polar(theta="y") +
         xlim(c(2, 4)) +
-        hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
+        # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
         theme(legend.position = "none") +
         labs(title = label_title, subtitle =label_subtitle, x="", y="")
       
@@ -236,7 +236,7 @@ shinyServer(function(input, output, session) {
                   , vjust = 0,  size = 4) +
         scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
         scale_y_continuous(limits = c(0, sum(dplot$euros) + 200)) +
-        hrbrthemes::theme_ipsum() +
+        # hrbrthemes::theme_ipsum() +
         theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
               plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
               plot.caption.position =  "plot",

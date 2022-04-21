@@ -5,7 +5,7 @@ account: janimiettinen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6081013
-bundleId: 5793886
+bundleId: 5821392
 url: https://janimiettinen.shinyapps.io/sleepapneacalculator/
-when: 1649850586.44578
-lastSyncTime: 1649850586.44579
+when: 1650526195.669
+lastSyncTime: 1650526195.66901
