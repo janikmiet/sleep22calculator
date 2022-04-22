@@ -9,23 +9,22 @@ options(scipen = 999)
 loc <- "Italy"
 
 ## Connection
-con <- dbConnect(duckdb::duckdb(), dbdir="sleep22_shiny.duckdb", read_only=TRUE)
-dbListTables(conn = con)
+source("global.R")
 
 ## OSA table
-osa <- tbl(con, "osa") %>%  collect()
-osa <- tbl(con, "osanew") %>%  collect() %>% filter(location_name == loc)
+osa <- osanew %>% filter(location_name == loc)
 
 ## Calculate prevalent cases and costs per conditions & locations
-tbl(con, "prevalences") %>% 
+prev %>% 
   filter(location_name == loc) %>% 
-  collect() %>% 
   # Calculate prevalent cases and costs per conditions
   # prevalences %>% 
   # filter(location_name == input$location) %>% 
   mutate(
     # Select prevalence which to use
     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
+    ## PAF
+    PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), 
     pop_both = pop_1574_both, ## This is going to be dynamic selection
     ## Prevalents per conditions
     prevalent_cases = prevalence * pop_both, ## Taudin prevalenssi * populaatio, ok
@@ -161,5 +160,4 @@ p3
 library(patchwork)
 p1 / p2
 (p1 + p2) / p3
-## DB DISCONNECT -----
-dbDisconnect(con)
+

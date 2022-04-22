@@ -60,7 +60,6 @@ shinyServer(function(input, output, session) {
   
   ## Core of calculus part 1
   calc_total = reactive({
-    ## TODO add PAF calculation
     ## TODO add mortality to calc
 
     ## Get original data and enchance it with hot table
@@ -72,7 +71,9 @@ shinyServer(function(input, output, session) {
       filter(location_name == input$location) %>%
       mutate(
         ## PAF
-        # TODO here PAF calculation, ottaako huomioon naisten ja miesten populaatiot?
+        # TODO here PAF calculation
+        # RR = , #risk ratio
+        PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), # PAF formula from TODO ADD SOURCE. Is it specific for Armeni?
         ## Prevalents per conditions
         prevalent_cases = prevalence * pop_both, 
         prevalent_cases_influenced_osa = PAF * prevalent_cases,
