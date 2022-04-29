@@ -9,6 +9,7 @@ library(shiny)
 library(rhandsontable)
 library(data.table)
 library(hrbrthemes)
+library(ragg)
 
 options(scipen = 999)
 

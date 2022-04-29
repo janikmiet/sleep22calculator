@@ -71,7 +71,7 @@ shinyServer(function(input, output, session) {
       filter(location_name == input$location) %>%
       mutate(
         ## PAF
-        # TODO here PAF calculation
+        # TODO here PAF calculation for OR
         # RR = , #risk ratio
         PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), # PAF formula from TODO ADD SOURCE. Is it specific for Armeni?
         ## Prevalents per conditions

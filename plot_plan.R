@@ -14,6 +14,30 @@ source("global.R")
 ## OSA table
 osa <- osanew %>% filter(location_name == loc)
 
+
+## PAF from OR
+# PD
+# PE
+# PE_
+
+paf_or <- function(data, OR, PD, PE){
+  PE_ = 1 - PE
+  
+  # (PD * (1 - OR) + PE_ + OR * PE +- sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  
+  VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  
+  VALUE <- ifelse(VALUE1 < 100 & VALUE1 > 0, VALUE1, VALUE2)
+  
+  PAF = 1 - ((100 * VALUE) / PD)
+  
+  return(PAF)
+}
+
+
+
+
 ## Calculate prevalent cases and costs per conditions & locations
 prev %>% 
   filter(location_name == loc) %>% 
