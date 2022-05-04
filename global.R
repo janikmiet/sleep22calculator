@@ -14,7 +14,7 @@ library(ragg)
 options(scipen = 999)
 
 money_correction <- arrow::read_parquet("data/money_correction.parquet")
-prev <- arrow::read_parquet("data/prevalences.parquet")
+prev <- arrow::read_parquet("data/prevalences.parquet") 
 osa <- arrow::read_parquet("data/osa.parquet")
 osanew <- arrow::read_parquet("data/osanew.parquet")
 pop <- arrow::read_parquet("data/pop.parquet")
@@ -36,11 +36,6 @@ paf_or <- function(OR, PD, PE){
   return(PAF)
 }
 
-test_func <- function(OR, PD, PE){
-  return(OR*PD * PE)
-}
-
-  
 if(FALSE){
   # DUCKDB version
   # con <- dbConnect(duckdb::duckdb(), dbdir="sleep22_shiny.duckdb", read_only=TRUE)

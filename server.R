@@ -6,7 +6,12 @@ shinyServer(function(input, output, session) {
 
   ## Prevalences with selected country
   prevalences <- reactive({
+    
+    ## TODO new data where is also age_group column, which is associated with prevalence
+    # age_filter <- ifelse(input$osa_selected == "Armeni et al.", "1574", "3069")
+    
     prev %>% 
+      # filter(location_name == input$location & age_group == age_filter) %>%  ## THIS is for the age filter
       filter(location_name == input$location) %>% 
       mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme),
              #  population (Armeni 15-74 or Benjafield 30-69) depending on OSA 
@@ -145,7 +150,7 @@ shinyServer(function(input, output, session) {
   ## Hot table output ----
   output$hot <- renderRHandsontable({
     rhandsontable(
-      data = prevalences()[, c("condition", "prevalence", "PAF", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
+      data = prevalences()[, c("condition", "prevalence", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
       rowHeaders = NULL) %>% 
       hot_col("condition", readOnly = TRUE) %>%
       # hot_col("type", readOnly = TRUE) %>% 
@@ -235,7 +240,13 @@ shinyServer(function(input, output, session) {
         coord_polar(theta="y") +
         xlim(c(2, 4)) +
         # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
-        theme(legend.position = "none") +
+        # theme(legend.position = "none") +
+        theme(panel.background = element_rect(fill = "white"),
+              legend.position = "none",
+              panel.grid = element_blank(),
+              axis.title = element_blank(),
+              axis.ticks = element_blank(),
+              axis.text = element_blank()) +
         labs(title = label_title, subtitle =label_subtitle, x="", y="")
       
       ## Barplot output
