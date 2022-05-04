@@ -16,17 +16,32 @@ osa <- osanew %>% filter(location_name == loc)
 
 
 ## PAF from OR
-# PD
-# PE
-# PE_
-
-paf_or <- function(data, OR, PD, PE){
-  PE_ = 1 - PE
+# PD  ## having a disease, prevalence
+# PE  ## exposed, sleep apnea prevalence?
+# PE_ ##  unexposed, 
+paf_or <- function(OR, PD, PE){
   
-  # (PD * (1 - OR) + PE_ + OR * PE +- sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  # ## For testing
+  # temp <- prev %>% 
+  #   filter(location_name == loc & !is.na(OR)) %>% 
+  #   mutate(
+  #     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
+  #   ) %>% 
+  #   filter(!is.na(prevalence))
+  # OR = temp$OR 
+  # PD = temp$prevalence  *100
+  # PE = rep(osanew$rate[osanew$gender == "Both" & osanew$var == "Moderate-Severe" & osanew$location_name == loc]  *100, length(OR))
+  # 
+  # # # testi, pitäisi tulla 0,0216766
+  # # OR = 2
+  # # PD = 30
+  # # PE = 4
   
-  VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
-  VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (-PD * (1 - OR) + PE_ + OR * PE ) * (-PD * (1 - OR) + PE_ + OR * PE ) - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  ## For function
+  PE_ = 100 - PE
+  
+  VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
   
   VALUE <- ifelse(VALUE1 < 100 & VALUE1 > 0, VALUE1, VALUE2)
   
@@ -49,6 +64,7 @@ prev %>%
     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
     ## PAF
     PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), 
+    PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osanew$rate[osanew$gender == "Both" & osanew$var == "Moderate-Severe" & osanew$location_name == loc]), PAF),
     pop_both = pop_1574_both, ## This is going to be dynamic selection
     ## Prevalents per conditions
     prevalent_cases = prevalence * pop_both, ## Taudin prevalenssi * populaatio, ok
@@ -57,7 +73,7 @@ prev %>%
     direct_cost = prevalent_cases_influenced_osa * annual_direct_healthcare_cost, ## ok
     direct_non_healthcare_cost = prevalent_cases_influenced_osa * annual_direct_nonhealthcare_cost, ## ok
     productivity_lost_cost = prevalent_cases_influenced_osa * annual_productivity_losses_cost ## ok
-  ) %>% 
+    ) %>% 
   ## NA's to zero
   mutate(direct_cost = ifelse(is.na(direct_cost), 0 , direct_cost),
          direct_non_healthcare_cost = ifelse(is.na(direct_non_healthcare_cost), 0 , direct_non_healthcare_cost),

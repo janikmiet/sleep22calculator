@@ -25,6 +25,21 @@ locations <- prev %>%
   summarise(1) %>% 
   collect() -> locations
 locations <- sort(locations$location_name)
+
+# paf_or(OR, prevalence, osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"])
+paf_or <- function(OR, PD, PE){
+  PE_ = 100 - PE
+  VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
+  VALUE <- ifelse(VALUE1 < 100 & VALUE1 > 0, VALUE1, VALUE2)
+  PAF = 1 - ((100 * VALUE) / PD)
+  return(PAF)
+}
+
+test_func <- function(OR, PD, PE){
+  return(OR*PD * PE)
+}
+
   
 if(FALSE){
   # DUCKDB version

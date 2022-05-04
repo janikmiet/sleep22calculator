@@ -58,7 +58,13 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  ## Core of calculus part 1
+  ## osa value
+  osa_value <- reactive({
+    val <- osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"]
+    return(val)
+  })
+  
+  ## Core of calculus part 1 ----
   calc_total = reactive({
     ## TODO add mortality to calc
 
@@ -70,10 +76,11 @@ shinyServer(function(input, output, session) {
     d %>% 
       filter(location_name == input$location) %>%
       mutate(
-        ## PAF
+        ## PAF formula from TODO ADD SOURCE. Is it specific for Armeni?
+        PAFRR = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), NA), 
         # TODO here PAF calculation for OR
-        # RR = , #risk ratio
-        PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), # PAF formula from TODO ADD SOURCE. Is it specific for Armeni?
+        PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osa_value()), NA),
+        # PAF = ifelse(is.na(PAFOR), PAFRR, PAFOR),
         ## Prevalents per conditions
         prevalent_cases = prevalence * pop_both, 
         prevalent_cases_influenced_osa = PAF * prevalent_cases,
@@ -102,7 +109,7 @@ shinyServer(function(input, output, session) {
     return(dplot)
     })
     
-  ## Core of calculus part 2
+  ## Core of calculus part 2 ----
     calc = reactive({
       ## OSA-table and re-calculus
       dosa <- osa_table()
@@ -135,10 +142,10 @@ shinyServer(function(input, output, session) {
     return(dplot)
   })
   
-  ## Hot table output
+  ## Hot table output ----
   output$hot <- renderRHandsontable({
     rhandsontable(
-      data = prevalences()[, c("condition", "prevalence", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
+      data = prevalences()[, c("condition", "prevalence", "PAF", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
       rowHeaders = NULL) %>% 
       hot_col("condition", readOnly = TRUE) %>%
       # hot_col("type", readOnly = TRUE) %>% 
@@ -163,10 +170,12 @@ shinyServer(function(input, output, session) {
   #   )
   # })  
   
+  ## Download -----
+  
   ## For downloading CSV file
   makeQuery <- reactive({
     calc_total() %>% 
-      select(location_name, cause_name, condition, pop_both, PAF, prevalence, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs)
+      select(location_name, cause_name, condition, pop_both, OR, RR, PAF, PAFRR, PAFOR, prevalence, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs)
   })
   output$downloadData <- downloadHandler(
     filename = function() {
@@ -176,6 +185,11 @@ shinyServer(function(input, output, session) {
       write.csv(makeQuery(), file)
     }
   )
+  
+  ## DT summary table
+  output$summary = DT::renderDataTable({
+    makeQuery()
+  })
   
   ## For downloading the plot
   output$downloadPlot <- downloadHandler(
@@ -189,7 +203,7 @@ shinyServer(function(input, output, session) {
     }
   )
   
-  ## Creating the plot
+  ## Creating the infograph ----
   infograph <- reactive({
     if (!is.null(calc())) {
       ## Donut plot output 
@@ -220,7 +234,7 @@ shinyServer(function(input, output, session) {
         scale_fill_brewer(palette="Set2") +
         coord_polar(theta="y") +
         xlim(c(2, 4)) +
-        hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
+        # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
         theme(legend.position = "none") +
         labs(title = label_title, subtitle =label_subtitle, x="", y="")
       
@@ -237,7 +251,7 @@ shinyServer(function(input, output, session) {
                   , vjust = 0,  size = 4) +
         scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
         scale_y_continuous(limits = c(0, sum(dplot$euros) + 200)) +
-        hrbrthemes::theme_ipsum() +
+        # hrbrthemes::theme_ipsum() +
         theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
               plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
               plot.caption.position =  "plot",
