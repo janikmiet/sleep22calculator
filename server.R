@@ -240,19 +240,16 @@ shinyServer(function(input, output, session) {
           productivity_lost = sum(productivity_lost_cost, na.rm = T)
         ) %>% 
         pivot_longer(c(direct, nonhealthcare, productivity_lost)) -> dat
-      # Compute percentages
-      dat$fraction <- dat$value / sum(dat$value)
-      # Compute the cumulative percentages (top of each rectangle)
-      dat$ymax <- cumsum(dat$fraction)
-      # Compute the bottom of each rectangle
-      dat$ymin <- c(0, head(dat$ymax, n=-1))
-      # Compute label position
-      dat$labelPosition <- (dat$ymax + dat$ymin) / 2
-      # Compute a good label
-      dat$label <- paste0(dat$name, "\n ", format(round(dat$value, -4), big.mark = "," ), " €")
-      # Title
+      
+      dat$fraction <- dat$value / sum(dat$value) # Compute percentages
+      dat$ymax <- cumsum(dat$fraction) # Compute the cumulative percentages (top of each rectangle)
+      dat$ymin <- c(0, head(dat$ymax, n=-1)) # Compute the bottom of each rectangle
+      dat$labelPosition <- (dat$ymax + dat$ymin) / 2 # Compute label position
+      dat$label <- paste0(dat$name, "\n ", format(round(dat$value, -4), big.mark = "," ), " €") # Compute a good label
+      
       label_title <- paste0(" Sleep Apnea Cost in ", input$location)
       label_subtitle <- paste0("Total Cost: ", format(round(sum(dat$value), -4), big.mark = ","), " €")
+      
       # Donut plot
       p1 <- ggplot(dat, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=name)) +
         geom_rect() +
@@ -271,8 +268,9 @@ shinyServer(function(input, output, session) {
               axis.ticks = element_blank(),
               axis.text = element_blank(),
               plot.title = element_text(hjust = -0.2, vjust=2.12, face="bold")) +
-        labs(title = label_title, 
-             subtitle = label_subtitle, 
+        labs(title = label_subtitle, 
+             subtitle = "", 
+             fill = "Cost type",
              x = "",
              y = "")
       
@@ -288,14 +286,19 @@ shinyServer(function(input, output, session) {
         geom_text(aes(x=location_name, y=pos, label = paste0(prettyNum(round(euros, -1),big.mark = ","), " €"))
                   , vjust = 0,  size = 4) +
         scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
-        scale_y_continuous(limits = c(0, sum(dplot$euros) + 200), position = "right") +
+        scale_y_continuous(limits = c(0, sum(dplot$euros) + 200), position = "left") +
         # hrbrthemes::theme_ipsum() +
         theme_minimal() +
         theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
               plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
               plot.caption.position =  "plot",
               legend.position = "right") +
-        labs(x="", fill="", y = "Euros per patient")
+        labs(x="", 
+             fill="", 
+             title = "",
+             subtitle="Cost per patient",
+             y = "Euros",
+             fill = "Cost type")
       
       ## Population plot
       age_group <- ifelse(input$osa_selected == "Armeni et al.", "15-74", "30-69")
@@ -319,14 +322,17 @@ shinyServer(function(input, output, session) {
         theme(legend.position = "none") 
       
       ## Combine plots to one big one
-      ggarrange(
+      figure <- ggarrange(
         # Second row with box and dot plots
         ggarrange(p1, p2, ncol = 2, labels = c("", ""), common.legend = TRUE, legend = "bottom"), 
         p3,                # First row with line plot
         nrow = 2, 
         labels = ""       # Label of the line plot
       ) 
-     
+      annotate_figure(figure, 
+                      top = text_grob(label_title, color = "black", face = "bold", size = 16),
+                      bottom = text_grob("Data source: \n IHME, EuroStat, Armeni et al.", color = "blue",
+                                         hjust = 1, x = 1, face = "italic", size = 10))
     }
   })
   
