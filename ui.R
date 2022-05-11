@@ -19,28 +19,28 @@ shinyUI(fluidPage(
   ),
   fluidRow(
     column(2,
-           radioButtons("money_index", "Money index correction:", choices = c("No correction", "EuroStat")) ),
+           radioButtons("money_index", "Money index correction:", choices = c("No correction", "EuroStat '19")) ),
     column(3, 
            sliderInput("slapnea_prevalence_male", label = "Male Sleep Apnea (AHI≥15) prevalence", min = 0, max = 100, value = 60, step = .01)),
     column(2, 
-           downloadButton("downloadData","Save Data as CSV File"),
+           downloadButton("downloadData","Download calculation data as CSV"),
            downloadButton("downloadPlot", "Download the plot as png")),
   ),
   fluidRow(
-    tabsetPanel(type = "tabs",
-                tabPanel("Main",
+    # tabsetPanel(type = "tabs",
+                # tabPanel("Main",
                          column(7,
                                 rHandsontableOutput("hot")
                          ), 
                          column(5,
                                 plotOutput("plot")
                          )
-                ),
-                tabPanel("Summary",
-                         column(7,
-                                DT::dataTableOutput("summary")
-                         )
-                ))
+                #),
+                # tabPanel("Summary",
+                #          column(7,
+                #                 DT::dataTableOutput("summary")
+                #          )
+                # ))
     
   )
 ))

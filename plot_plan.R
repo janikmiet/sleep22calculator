@@ -15,57 +15,15 @@ source("global.R")
 osa <- osanew %>% filter(location_name == loc)
 
 
-## PAF from OR
-# PD  ## having a disease, prevalence
-# PE  ## exposed, sleep apnea prevalence?
-# PE_ ##  unexposed, 
-paf_or <- function(OR, PD, PE){
-  
-  # ## For testing
-  # temp <- prev %>% 
-  #   filter(location_name == loc & !is.na(OR)) %>% 
-  #   mutate(
-  #     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
-  #   ) %>% 
-  #   filter(!is.na(prevalence))
-  # OR = temp$OR 
-  # PD = temp$prevalence  *100
-  # PE = rep(osanew$rate[osanew$gender == "Both" & osanew$var == "Moderate-Severe" & osanew$location_name == loc]  *100, length(OR))
-  # 
-  # # # testi, pitäisi tulla 0,0216766
-  # # OR = 2
-  # # PD = 30
-  # # PE = 4
-  
-  ## For function
-  PE_ = 100 - PE
-  
-  VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
-  VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
-  
-  VALUE <- ifelse(VALUE1 < 100 & VALUE1 > 0, VALUE1, VALUE2)
-  
-  PAF = 1 - ((100 * VALUE) / PD)
-  
-  return(PAF)
-}
-
-
-
-
 ## Calculate prevalent cases and costs per conditions & locations
 prev %>% 
-  filter(location_name == loc) %>% 
-  # Calculate prevalent cases and costs per conditions
-  # prevalences %>% 
-  # filter(location_name == input$location) %>% 
+  filter(location_name == loc & age_group == "1574") %>% 
   mutate(
     # Select prevalence which to use
     prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme), 
     ## PAF
     PAF = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), PAF), 
     PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osanew$rate[osanew$gender == "Both" & osanew$var == "Moderate-Severe" & osanew$location_name == loc]), PAF),
-    pop_both = pop_1574_both, ## This is going to be dynamic selection
     ## Prevalents per conditions
     prevalent_cases = prevalence * pop_both, ## Taudin prevalenssi * populaatio, ok
     prevalent_cases_influenced_osa = PAF * prevalent_cases, ## PAF * prevalent_cases, ok
@@ -82,7 +40,7 @@ prev %>%
 
 ## Calculate total & patient costs per locations
 slapnea_cost1 %>% 
-  group_by(location_name, pop_1574_female, pop_1574_male) %>% 
+  group_by(location_name, pop_female, pop_male) %>% 
   summarise(
     ## Sums of costs
     direct_cost = sum(direct_cost, na.rm = T),
@@ -90,8 +48,6 @@ slapnea_cost1 %>%
     productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)
     )  %>% 
   mutate(
-    pop_female = pop_1574_female, ## these are dynamic in app
-    pop_male = pop_1574_male,
     ## Absolute values for dividing the cost per patient
     absolute_value_severe_moderate = ( (pop_female * osa$rate[osa$var == "Moderate" & osa$gender == "Female"]) + (pop_female * osa$rate[osa$var == "Severe" & osa$gender == "Female"]) + (pop_male * osa$rate[osa$var == "Moderate" & osa$gender == "Male"]) + (pop_male * osa$rate[osa$var == "Severe" & osa$gender == "Male"])), ## ok
     # absolute_value_mild = ( pop_female * osa$rate[osa$var == "Mild" & osa$gender == "Female"]) + (pop_male * osa$rate[osa$var == "Mild" & osa$gender == "Male"] ), ## ok
@@ -118,19 +74,14 @@ slapnea_cost1 %>%
 
 # Compute percentages
 dat$fraction <- dat$value / sum(dat$value)
-
 # Compute the cumulative percentages (top of each rectangle)
 dat$ymax <- cumsum(dat$fraction)
-
 # Compute the bottom of each rectangle
 dat$ymin <- c(0, head(dat$ymax, n=-1))
-
 # Compute label position
 dat$labelPosition <- (dat$ymax + dat$ymin) / 2
-
 # Compute a good label
 dat$label <- paste0(dat$name, "\n ", format(round(dat$value, -4), big.mark = "," ), " €")
-
 # Title
 label_title <- paste0("Total cost ", format(round(sum(dat$value), -4), big.mark = ","), " €")
 
@@ -141,7 +92,7 @@ p1 <- ggplot(dat, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=name)) +
   scale_fill_brewer(palette="Set2") +
   coord_polar(theta="y") +
   xlim(c(2, 4)) +
-  hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
+  # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
   theme(legend.position = "none") +
   labs(title = label_title, x="", y="")
 p1
@@ -161,7 +112,7 @@ p2 <- ggplot(data = dplot) +
               , vjust = 0,  size = 4) +
     scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
     scale_y_continuous(limits = c(0, sum(dplot$euros) + 200)) +
-    hrbrthemes::theme_ipsum() +
+    # hrbrthemes::theme_ipsum() +
     theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
           plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
           plot.caption.position =  "plot",
@@ -171,11 +122,10 @@ p2 <- ggplot(data = dplot) +
 p2
 
 ## AFFECTED POPULATION PLOT ----
-tbl(con, "popu_info") %>% 
-  left_join(tbl(con, "pop"), by = "location_name") %>% 
-  collect() -> popu_info
+popu_info %>% 
+  left_join(pop, by = "location_name") -> dpop
 
-dpop <- popu_info %>% 
+dpop <- dpop %>% 
   filter(location_name == loc) %>% 
   mutate(
     Population = pop_both,
@@ -190,12 +140,30 @@ p3 <- ggplot(data = dpop) +
   scale_fill_brewer(palette="Set3") +
   scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
   labs(x="", y="") +
-  hrbrthemes::theme_ipsum() +
+  # hrbrthemes::theme_ipsum() +
   theme(legend.position = "none") 
 
 p3
 
 ## Put together -----
+# install.packages("ggpubr")
+library("ggpubr")
+
+ggarrange(
+  p3,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(p1, p2, ncol = 2, labels = c("B", "C"), common.legend = TRUE, legend = "bottom"), 
+  nrow = 2, 
+  labels = "A"       # Label of the line plot
+) 
+
+ggarrange(
+  # Second row with box and dot plots
+  ggarrange(p1, p2, ncol = 2, labels = c("", ""), common.legend = TRUE, legend = "bottom"), 
+  p3,                # First row with line plot
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+) 
 
 library(patchwork)
 p1 / p2

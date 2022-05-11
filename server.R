@@ -3,25 +3,29 @@ library(rhandsontable)
 library(data.table)
 
 shinyServer(function(input, output, session) {
-
-  ## Prevalences with selected country
-  prevalences <- reactive({
-    
-    ## TODO new data where is also age_group column, which is associated with prevalence
-    # age_filter <- ifelse(input$osa_selected == "Armeni et al.", "1574", "3069")
-    
-    prev %>% 
-      # filter(location_name == input$location & age_group == age_filter) %>%  ## THIS is for the age filter
+  
+  ## Population -----
+  population <- reactive({
+    pop %>% 
       filter(location_name == input$location) %>% 
-      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme),
-             #  population (Armeni 15-74 or Benjafield 30-69) depending on OSA 
-             pop_both = ifelse(input$osa_selected == "Armeni et al.",  pop_1574_both, pop_3069_both),
-             pop_female= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_female, pop_3069_female),
-             pop_male= ifelse(input$osa_selected == "Armeni et al.",  pop_1574_male, pop_3069_male)) %>% 
+      mutate(
+        pop_both = ifelse(input$osa_selected == "Armeni et al.", pop_1574_both, pop_3069_both),
+        pop_female = ifelse(input$osa_selected == "Armeni et al.", pop_1574_female, pop_3069_female),
+        pop_male = ifelse(input$osa_selected == "Armeni et al.", pop_1574_male, pop_3069_male)
+      )
+  })
+
+  ## Prevalences with selected country -----
+  prevalences <- reactive({
+    ## Filterin data of age group (which osa table is selected)
+    age_filter <- ifelse(input$osa_selected == "Armeni et al.", "1574", "3069")
+    prev %>% 
+      filter(location_name == input$location & age_group == age_filter) %>% 
+      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% 
       data.frame()
   })
   
-  ## OSA table selected
+  ## OSA table selected -----
   osa_table <- reactive({
     if(input$osa_selected == "Armeni et al."){
       d <- osa
@@ -63,9 +67,16 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  ## osa value
+  ## OSA value (sleep apnea prevalence) -----
   osa_value <- reactive({
-    val <- osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"]
+    # val <- osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"] # osa value from the table
+    
+    ## CHECK THIS> adjust total value by the gender OSA slider input
+    # This is affected by gender prevalence and gives total prevalence of Sleep Apnea
+    males = input$slapnea_prevalence_male/100 * population()$pop_male
+    females = input$slapnea_prevalence_female/100 * population()$pop_female
+    val <- (males + females) / population()$pop_both
+    
     return(val)
   })
   
@@ -81,11 +92,10 @@ shinyServer(function(input, output, session) {
     d %>% 
       filter(location_name == input$location) %>%
       mutate(
-        ## PAF formula from TODO ADD SOURCE. Is it specific for Armeni?
-        PAFRR = ifelse(!is.na(RR), (prevalence * (RR - 1) / (prevalence * (RR - 1) + 1)), NA), 
-        # TODO here PAF calculation for OR
+        ## PAF calculation for Risk Ratio or Odds Ratio:
+        PAFRR = ifelse(!is.na(RR), (osa_value() * (RR - 1) / (osa_value() * (RR - 1) + 1)), NA), 
         PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osa_value()), NA),
-        # PAF = ifelse(is.na(PAFOR), PAFRR, PAFOR),
+        PAF = ifelse(is.na(PAFOR), PAFRR, PAFOR),
         ## Prevalents per conditions
         prevalent_cases = prevalence * pop_both, 
         prevalent_cases_influenced_osa = PAF * prevalent_cases,
@@ -100,7 +110,7 @@ shinyServer(function(input, output, session) {
              total_costs = direct_cost + direct_non_healthcare_cost + productivity_lost_cost) -> dplot
     
     ## Make money correction
-    if(input$money_index == "EuroStat"){
+    if(input$money_index == "EuroStat '19"){
       dplot <- dplot %>% 
         left_join(money_correction, by = "location_name") %>% 
         mutate(corrected = ifelse(is.na(index), FALSE, TRUE),
@@ -135,6 +145,7 @@ shinyServer(function(input, output, session) {
                   productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
         mutate(
           ## Absolute values with separated moderate/severe calculation
+          ## TODO change to use slider input OSA value!!!
           absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Female"]) + (pop_female * dosa$rate[dosa$var == "Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Male"]) + (pop_male * dosa$rate[dosa$var == "Severe" & dosa$gender == "Male"])),
           absolute_value_mild = ( pop_female * dosa$rate[dosa$var == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$var == "Mild" & dosa$gender == "Male"] ),
           ## Costs per patients
@@ -154,14 +165,14 @@ shinyServer(function(input, output, session) {
       rowHeaders = NULL) %>% 
       hot_col("condition", readOnly = TRUE) %>%
       # hot_col("type", readOnly = TRUE) %>% 
-      hot_col("prevalence", format = "0%") %>% 
-      hot_cell(1, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
+      hot_col("prevalence", format = "0.00%") #%>% 
+      # hot_cell(1, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
       # hot_col("annual_direct_healthcare_cost", format = "0,0.00 €") %>%
-      hot_cell(1, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
-      hot_cell(1, "annual_productivity_losses_cost", readOnly = TRUE) %>% 
-      hot_cell(2, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
-      hot_cell(2, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
-      hot_cell(2, "annual_productivity_losses_cost", readOnly = TRUE)
+      # hot_cell(1, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
+      # hot_cell(1, "annual_productivity_losses_cost", readOnly = TRUE) %>% 
+      # hot_cell(2, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
+      # hot_cell(2, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
+      # hot_cell(2, "annual_productivity_losses_cost", readOnly = TRUE)
   })
   
   ## Table output
@@ -177,10 +188,20 @@ shinyServer(function(input, output, session) {
   
   ## Download -----
   
-  ## For downloading CSV file
+  ## For downloading the CSV file
   makeQuery <- reactive({
     calc_total() %>% 
-      select(location_name, cause_name, condition, pop_both, OR, RR, PAF, PAFRR, PAFOR, prevalence, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs)
+      select(location_name, condition, prevalence, OR, RR, PAF, pop_both, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs) %>% 
+      mutate(
+        pop_both = round(pop_both, 0), 
+        prevalent_cases = round(prevalent_cases, 0), 
+        prevalent_cases_influenced_osa = round(prevalent_cases_influenced_osa, 0), 
+        direct_cost = round(direct_cost, 0), 
+        direct_non_healthcare_cost = round(direct_non_healthcare_cost, 0), 
+        productivity_lost_cost = round(productivity_lost_cost, 0), 
+        total_costs = round(total_costs, 0)#,
+        # total_cost_per_patient = total_costs / prevalent_cases_influenced_osa ## TODO 
+      )
   })
   output$downloadData <- downloadHandler(
     filename = function() {
@@ -240,14 +261,20 @@ shinyServer(function(input, output, session) {
         coord_polar(theta="y") +
         xlim(c(2, 4)) +
         # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
+        # hrbrthemes::theme_ipsum() +
         # theme(legend.position = "none") +
+        # theme_minimal() +
         theme(panel.background = element_rect(fill = "white"),
               legend.position = "none",
               panel.grid = element_blank(),
               axis.title = element_blank(),
               axis.ticks = element_blank(),
-              axis.text = element_blank()) +
-        labs(title = label_title, subtitle =label_subtitle, x="", y="")
+              axis.text = element_blank(),
+              plot.title = element_text(hjust = -0.2, vjust=2.12, face="bold")) +
+        labs(title = label_title, 
+             subtitle = label_subtitle, 
+             x = "",
+             y = "")
       
       ## Barplot output
       dplot <- calc() %>%
@@ -261,15 +288,44 @@ shinyServer(function(input, output, session) {
         geom_text(aes(x=location_name, y=pos, label = paste0(prettyNum(round(euros, -1),big.mark = ","), " €"))
                   , vjust = 0,  size = 4) +
         scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
-        scale_y_continuous(limits = c(0, sum(dplot$euros) + 200)) +
+        scale_y_continuous(limits = c(0, sum(dplot$euros) + 200), position = "right") +
         # hrbrthemes::theme_ipsum() +
+        theme_minimal() +
         theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
               plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
               plot.caption.position =  "plot",
               legend.position = "right") +
-        labs(x="", fill="", subtitle = "Per patient")
+        labs(x="", fill="", y = "Euros per patient")
       
-     p1 / p2
+      ## Population plot
+      age_group <- ifelse(input$osa_selected == "Armeni et al.", "15-74", "30-69")
+      dpop <- popu_info %>% 
+        filter(location_name == input$location) %>% 
+        mutate(
+          Total = pop_both,
+          Selected = population()$pop_both,
+          Affected = (input$slapnea_prevalence_male / 100) * population()$pop_male + (input$slapnea_prevalence_female / 100) * population()$pop_female) %>%
+        select(location_name, Total, Selected, Affected) %>% 
+        pivot_longer(c(Total, Selected, Affected))
+      
+      p3 <- ggplot(data = dpop) +
+        geom_bar(aes(x=reorder(name, -value), y=value, fill = name), stat = "identity") +
+        geom_label(aes(x=reorder(name, -value), y=value, label = paste0(name, " \n ", format(round(value,-2), big.mark = ",")))) +
+        scale_fill_brewer(palette="Set3") +
+        scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
+        labs(x="", y="", subtitle = paste0("Population (Total / ", age_group, " yrs / Affected)")) +
+        # hrbrthemes::theme_ipsum() +
+        theme_minimal() +
+        theme(legend.position = "none") 
+      
+      ## Combine plots to one big one
+      ggarrange(
+        # Second row with box and dot plots
+        ggarrange(p1, p2, ncol = 2, labels = c("", ""), common.legend = TRUE, legend = "bottom"), 
+        p3,                # First row with line plot
+        nrow = 2, 
+        labels = ""       # Label of the line plot
+      ) 
      
     }
   })
@@ -278,33 +334,5 @@ shinyServer(function(input, output, session) {
   output$plot = renderPlot(width = 450 , height = 700, {
     infograph()
   })
-  
-  infograph2 <- reactive({
-    ## Population info
-    dpop <- popu_info %>% 
-      filter(location_name == input$location) %>% 
-      mutate(
-        Population = pop_both,
-        Selected = pop_both - pop_1574_both,
-        Affected = (input$slapnea_prevalence_male / 100) * pop_male + (input$slapnea_prevalence_female / 100) * pop_female) %>%
-      select(location_name, Population, Selected, Affected) %>% 
-      pivot_longer(c(Population, Selected, Affected))
-    
-    p3 <- ggplot(data = dpop) +
-      geom_bar(aes(x=reorder(name, -value), y=value, fill = name), stat = "identity") +
-      geom_label(aes(x=reorder(name, -value), y=value, label = paste0(name, " \n ", format(round(value,-4), big.mark = ",")))) +
-      scale_fill_brewer(palette="Set3") +
-      scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
-      labs(x="", y="") +
-      hrbrthemes::theme_ipsum() +
-      theme(legend.position = "none") 
-    
-    p3
-  })
-  ## Population plot
-  output$plot2 = renderPlot(width = 450 , height = 700, {
-    infograph2()
-  })
-
   
 })

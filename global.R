@@ -4,6 +4,7 @@ library(tidyverse)
 library(tidyr)
 library(patchwork)
 library(DT)
+library(ggpubr)
 
 library(shiny)
 library(rhandsontable)
@@ -26,8 +27,14 @@ locations <- prev %>%
   collect() -> locations
 locations <- sort(locations$location_name)
 
-# paf_or(OR, prevalence, osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"])
+
+## PAF ODD RATIO formula. Give decimals.
+# PD  ## having a disease, prevalence
+# PE  ## exposed, sleep apnea prevalence?
+# PE_ ##  unexposed, 
 paf_or <- function(OR, PD, PE){
+  PD = PD * 100
+  PE = PE * 100
   PE_ = 100 - PE
   VALUE1 = (PD * (1 - OR) + PE_ + OR * PE + sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
   VALUE2 = (PD * (1 - OR) + PE_ + OR * PE - sqrt( (PD * (1 - OR) + PE_ + OR * PE )^2 - 4 * PE_ * (1 - OR) *PD )) / (2 * PE_ * (1 - OR))
