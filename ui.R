@@ -7,7 +7,7 @@ shinyUI(fluidPage(
   titlePanel("Sleep Apnea Costs Top-down calculator"),
   fluidRow(
     column(12,
-           helpText("Select country to get base values for calculating costs. When OSA table Armeni et al. is selected,  sleep apnea prevalence is taken from Italy (population 15-74 yrs). Selecting OSA table Benjafield et al., sleep apnea prevalences are from their article (population 30-69 yrs). Condition values are country specific from IHME dataset and prevalences which are not available from IHME dataset are base values from Italy. You can change prevalences and costs values to get more specific calculation of the sleep apnea costs. "))
+           helpText("Select country to get base values for calculating costs. When OSA table Armeni et al. is selected,  sleep apnea prevalence is taken from Italy (population 15-74 yrs). Selecting OSA table Benjafield et al., sleep apnea prevalences are from their article (population 30-69 yrs). You can change gender specific sleep apnea prevalence with the slider input. Condition values are country specific from IHME dataset. Prevalences which are not available from IHME dataset are base values from Italy (Armeni et al.). You can change prevalences and costs values to get more specific calculation of the sleep apnea costs. "))
   ),
   fluidRow(
     column(2,
