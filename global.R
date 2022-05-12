@@ -2,18 +2,15 @@ library(DBI)
 library(arrow)
 library(tidyverse)
 library(tidyr)
-library(patchwork)
 library(DT)
 library(ggpubr)
-
 library(shiny)
 library(rhandsontable)
 library(data.table)
-library(hrbrthemes)
-library(ragg)
 
 options(scipen = 999)
 
+## Load datasets -----
 money_correction <- arrow::read_parquet("data/money_correction.parquet")
 prev <- arrow::read_parquet("data/prevalences.parquet") 
 osa <- arrow::read_parquet("data/osa.parquet")
@@ -28,7 +25,8 @@ locations <- prev %>%
 locations <- sort(locations$location_name)
 
 
-## PAF ODD RATIO formula. Give decimals.
+## PAF ODD RATIO formula -----
+## Give only decimals as parameters
 # PD  ## having a disease, prevalence
 # PE  ## exposed, sleep apnea prevalence?
 # PE_ ##  unexposed, 
@@ -41,43 +39,4 @@ paf_or <- function(OR, PD, PE){
   VALUE <- ifelse(VALUE1 < 100 & VALUE1 > 0, VALUE1, VALUE2)
   PAF = 1 - ((100 * VALUE) / PD)
   return(PAF)
-}
-
-if(FALSE){
-  # DUCKDB version
-  # con <- dbConnect(duckdb::duckdb(), dbdir="sleep22_shiny.duckdb", read_only=TRUE)
-  # dbListTables(conn = con)
-  # # dbListFields(con, "prevalences")
-  # 
-  # ## Full table prevalences
-  # prev <- tbl(con, "prevalences") %>% 
-  #   collect() 
-  # 
-  # ## Full osa table
-  # osa <- tbl(con, "osa") %>%  collect()
-  # osanew <- tbl(con, "osanew") %>%  collect()
-  # 
-  # ## Full population table
-  # pop <- tbl(con, "pop") %>% collect()
-  # 
-  # ## Locations list
-  # tbl(con, "prevalences") %>% 
-  #   group_by(location_name) %>% 
-  #   summarise(1) %>% 
-  #   collect() -> locations
-  # locations <- sort(locations$location_name)
-  # 
-  # ## Population info
-  # tbl(con, "popu_info") %>% 
-  #   left_join(tbl(con, "pop"), by = "location_name") %>% 
-  #   collect() -> popu_info
-  # 
-  # ## Money index
-  # tbl(con, "money_correction") %>% 
-  #   collect() -> money_correction
-  # 
-  # ## Disconnect
-  # duckdb::dbDisconnect(con)
-  # 
-  # rm(list=c("con"))
 }

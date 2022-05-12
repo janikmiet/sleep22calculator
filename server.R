@@ -1,6 +1,3 @@
-library(shiny)
-library(rhandsontable)
-library(data.table)
 
 shinyServer(function(input, output, session) {
   
@@ -257,10 +254,6 @@ shinyServer(function(input, output, session) {
         scale_fill_brewer(palette="Set2") +
         coord_polar(theta="y") +
         xlim(c(2, 4)) +
-        # hrbrthemes::theme_ipsum(grid = F, axis_text_size = F ) +
-        # hrbrthemes::theme_ipsum() +
-        # theme(legend.position = "none") +
-        # theme_minimal() +
         theme(panel.background = element_rect(fill = "white"),
               legend.position = "none",
               panel.grid = element_blank(),
@@ -287,7 +280,6 @@ shinyServer(function(input, output, session) {
                   , vjust = 0,  size = 4) +
         scale_fill_brewer(palette = "Set2", labels=c('Direct healthcare cost', 'Direct non-helthcare cost', 'Productivity losses')) +
         scale_y_continuous(limits = c(0, sum(dplot$euros) + 200), position = "left") +
-        # hrbrthemes::theme_ipsum() +
         theme_minimal() +
         theme(plot.caption = element_text(hjust = 0, face= "italic"), #Default is hjust=1
               plot.title.position = "plot", #NEW parameter. Apply for subtitle too.
@@ -317,7 +309,6 @@ shinyServer(function(input, output, session) {
         scale_fill_brewer(palette="Set3") +
         scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
         labs(x="", y="", subtitle = paste0("Population (Total / ", age_group, " yrs / Affected)")) +
-        # hrbrthemes::theme_ipsum() +
         theme_minimal() +
         theme(legend.position = "none") 
       

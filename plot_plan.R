@@ -1,15 +1,11 @@
-library(tidyverse)
-library(tidyr)
-library(duckdb)
-library(ggplot2)
+## Testing plots
 
+## Connection
+source("global.R")
 options(scipen = 999)
 
 ## DATA ----
 loc <- "Italy"
-
-## Connection
-source("global.R")
 
 ## OSA table
 osa <- osanew %>% filter(location_name == loc)
@@ -165,7 +161,4 @@ ggarrange(
   labels = ""       # Label of the line plot
 ) 
 
-library(patchwork)
-p1 / p2
-(p1 + p2) / p3
 
