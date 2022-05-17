@@ -2,6 +2,7 @@
 shinyServer(function(input, output, session) {
   
   ## Population -----
+  ## Age filtered population
   population <- reactive({
     pop %>% 
       filter(location_name == input$location) %>% 
@@ -67,10 +68,8 @@ shinyServer(function(input, output, session) {
   ## OSA value (sleep apnea prevalence) -----
   osa_value <- reactive({
     # val <- osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"] # osa value from the table
-    
-    ## CHECK THIS> adjust total value by the gender OSA slider input
-    # This is affected by gender prevalence and gives total prevalence of Sleep Apnea
-    males = input$slapnea_prevalence_male/100 * population()$pop_male
+    ## Value is affected by gender prevalence and gives total prevalence of Sleep Apnea
+    males = input$slapnea_prevalence_male/100 * population()$pop_male 
     females = input$slapnea_prevalence_female/100 * population()$pop_female
     val <- (males + females) / population()$pop_both
     
@@ -79,7 +78,6 @@ shinyServer(function(input, output, session) {
   
   ## Core of calculus part 1 ----
   calc_total = reactive({
-    ## TODO add mortality to calc
 
     ## Get original data and enchance it with hot table
     d <- prevalences() %>% 
@@ -125,10 +123,9 @@ shinyServer(function(input, output, session) {
     calc = reactive({
       ## OSA-table and re-calculus
       dosa <- osa_table()
-      ##  Re-calculate sleep apnea prevalences per gender by slider inputs
+      ##  Re-calculate sleep apnea (moderate/severe) prevalences per gender including slider inputs
       dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
       dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
-      ## TODO CHECK these correction values with comments
       dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
       dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
       dosa$rate[dosa$gender == "Female" & dosa$var=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
@@ -142,7 +139,6 @@ shinyServer(function(input, output, session) {
                   productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
         mutate(
           ## Absolute values with separated moderate/severe calculation
-          ## TODO change to use slider input OSA value!!!
           absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Female"]) + (pop_female * dosa$rate[dosa$var == "Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Male"]) + (pop_male * dosa$rate[dosa$var == "Severe" & dosa$gender == "Male"])),
           absolute_value_mild = ( pop_female * dosa$rate[dosa$var == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$var == "Mild" & dosa$gender == "Male"] ),
           ## Costs per patients
@@ -161,34 +157,15 @@ shinyServer(function(input, output, session) {
       data = prevalences()[, c("condition", "prevalence", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
       rowHeaders = NULL) %>% 
       hot_col("condition", readOnly = TRUE) %>%
-      # hot_col("type", readOnly = TRUE) %>% 
-      hot_col("prevalence", format = "0.00%") #%>% 
-      # hot_cell(1, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
-      # hot_col("annual_direct_healthcare_cost", format = "0,0.00 €") %>%
-      # hot_cell(1, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
-      # hot_cell(1, "annual_productivity_losses_cost", readOnly = TRUE) %>% 
-      # hot_cell(2, "annual_direct_healthcare_cost", readOnly = TRUE) %>% 
-      # hot_cell(2, "annual_direct_nonhealthcare_cost", readOnly = TRUE) %>% 
-      # hot_cell(2, "annual_productivity_losses_cost", readOnly = TRUE)
+      hot_col("prevalence", format = "0.00%")
   })
+
   
-  ## Table output
-  ## For testing the output dataset 
-  # output$textOuput <- renderText({
-  #   paste(
-  #     as.data.frame(hot_to_r(input$hot))
-  #     # hot_to_r(input$hot)
-  #     # unlist(hot_to_r(input$hot))#,
-  #     # collapse = '; '
-  #   )
-  # })  
-  
-  ## Download -----
+  ## Downloads -----
   
   ## For downloading the CSV file
   makeQuery <- reactive({
     calc_total() %>% 
-      select(location_name, condition, prevalence, OR, RR, PAF, pop_both, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs) %>% 
       mutate(
         pop_both = round(pop_both, 0), 
         prevalent_cases = round(prevalent_cases, 0), 
@@ -196,10 +173,13 @@ shinyServer(function(input, output, session) {
         direct_cost = round(direct_cost, 0), 
         direct_non_healthcare_cost = round(direct_non_healthcare_cost, 0), 
         productivity_lost_cost = round(productivity_lost_cost, 0), 
-        total_costs = round(total_costs, 0)#,
-        # total_cost_per_patient = total_costs / prevalent_cases_influenced_osa ## TODO 
-      )
+        abs_moderate_severe_pop = population()$pop_female * input$slapnea_prevalence_female / 100 + population()$pop_male * input$slapnea_prevalence_male / 100 , 
+        total_costs = round(total_costs, 0),
+        total_cost_per_patient = round(total_costs / abs_moderate_severe_pop, 0) 
+      ) %>% 
+      select(location_name, condition, prevalence, OR, RR, PAF, pop_both, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
   })
+  
   output$downloadData <- downloadHandler(
     filename = function() {
       paste(input$location, "_sleep_apnea_cost_calculation-", ".csv", sep="")
@@ -226,7 +206,7 @@ shinyServer(function(input, output, session) {
     }
   )
   
-  ## Creating the infograph ----
+  ## Infograph ----
   infograph <- reactive({
     if (!is.null(calc())) {
       ## Donut plot output 

@@ -1,7 +1,4 @@
 
-library(rhandsontable)
-
-options("shiny.useragg" = TRUE)
 
 shinyUI(fluidPage(
   titlePanel("Sleep Apnea Costs Top-down calculator"),

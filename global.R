@@ -1,4 +1,3 @@
-library(DBI)
 library(arrow)
 library(tidyverse)
 library(tidyr)
@@ -8,6 +7,7 @@ library(shiny)
 library(rhandsontable)
 library(data.table)
 
+options("shiny.useragg" = TRUE)
 options(scipen = 999)
 
 ## Load datasets -----
