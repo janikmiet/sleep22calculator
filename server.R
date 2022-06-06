@@ -1,6 +1,15 @@
 
 shinyServer(function(input, output, session) {
   
+  ## Update location by URL
+  observe({
+    query <- parseQueryString(session$clientData$url_search)
+    if (!is.null(query[['location_name']])) {
+      # updateTextInput(session, "InputLabel_A", value = )
+      updateSelectInput(session, "location", selected = query[['location_name']])
+    }
+  })
+  
   ## Population -----
   ## Age filtered population
   population <- reactive({
@@ -168,8 +177,8 @@ shinyServer(function(input, output, session) {
     calc_total() %>% 
       mutate(
         pop_both = round(pop_both, 0), 
-        prevalent_cases = round(prevalent_cases, 0), 
-        prevalent_cases_influenced_osa = round(prevalent_cases_influenced_osa, 0), 
+        prevalent_cases = prevalent_cases,#round(prevalent_cases, 0), 
+        prevalent_cases_influenced_osa = prevalent_cases_influenced_osa,#round(prevalent_cases_influenced_osa, 0), 
         direct_cost = round(direct_cost, 0), 
         direct_non_healthcare_cost = round(direct_non_healthcare_cost, 0), 
         productivity_lost_cost = round(productivity_lost_cost, 0), 
