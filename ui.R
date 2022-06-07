@@ -12,7 +12,7 @@ shinyUI(fluidPage(
     column(3, 
            sliderInput("slapnea_prevalence_female", label = "Female Sleep Apnea (AHI≥15) prevalence", min = 0, max = 100, value = 60, step = .01)),
     column(2,
-           radioButtons("osa_selected", "OSA based on:", choices = c("Armeni et al.", "Benjafield A. et al.")) ),
+           radioButtons("osa_selected", "OSA based on:", choices = c("Benjafield A. et al.", "Armeni et al.")) ),
   ),
   fluidRow(
     column(2,
