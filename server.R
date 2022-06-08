@@ -16,16 +16,16 @@ shinyServer(function(input, output, session) {
     pop %>% 
       filter(location_name == input$location) %>% 
       mutate(
-        pop_both = ifelse(input$osa_selected == "Armeni et al.", pop_1574_both, pop_3069_both),
-        pop_female = ifelse(input$osa_selected == "Armeni et al.", pop_1574_female, pop_3069_female),
-        pop_male = ifelse(input$osa_selected == "Armeni et al.", pop_1574_male, pop_3069_male)
+        pop_both = ifelse(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)", pop_1574_both, pop_3069_both),
+        pop_female = ifelse(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)", pop_1574_female, pop_3069_female),
+        pop_male = ifelse(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)", pop_1574_male, pop_3069_male)
       )
   })
 
   ## Prevalences with selected country -----
   prevalences <- reactive({
     ## Filterin data of age group (which osa table is selected)
-    age_filter <- ifelse(input$osa_selected == "Armeni et al.", "1574", "3069")
+    age_filter <- ifelse(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)", "1574", "3069")
     prev %>% 
       filter(location_name == input$location & age_group == age_filter) %>% 
       mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% 
@@ -34,7 +34,7 @@ shinyServer(function(input, output, session) {
   
   ## OSA table selected -----
   osa_table <- reactive({
-    if(input$osa_selected == "Armeni et al."){
+    if(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)"){
       d <- osa
     }else{
       d <- osanew %>% filter(location_name == input$location)
@@ -282,7 +282,7 @@ shinyServer(function(input, output, session) {
              fill = "Cost type")
       
       ## Population plot
-      age_group <- ifelse(input$osa_selected == "Armeni et al.", "15-74", "30-69")
+      age_group <- ifelse(input$osa_selected == "Fixed prevalences based on Italy (Armeni et al)", "15-74", "30-69")
       dpop <- popu_info %>% 
         filter(location_name == input$location) %>% 
         mutate(
