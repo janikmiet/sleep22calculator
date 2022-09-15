@@ -24,6 +24,8 @@ locations <- prev %>%
   collect() -> locations
 locations <- sort(locations$location_name)
 
+## TODO tallenna tämä excelistä suoraan, tee muutos sleep22-projektiin
+prev_simple <- arrow::read_parquet("data/prevalences_simple.parquet") 
 
 ## PAF ODD RATIO formula -----
 ## Give only decimals as parameters
