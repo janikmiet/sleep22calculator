@@ -1,34 +1,49 @@
-age_filter <- "3069" # "1574" # "3069"
-prev_simple %>% 
-  filter(location_name == "Italy" & age_group == age_filter) %>% 
-  group_by(condition) %>% 
-  mutate(prevalence = ifelse(age_filter == "3069", ifelse(!is.na(ihme), ihme, prevalence_base_italy), prevalence_base_italy)) %>% ## condition prevalence first condition Armeni/Benjafield, second if ihme data available.
-  # mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% # condition prevalences comes from ihme, if available
-  data.frame()
-
-
-## Causes Prevalences for the selected country and age group -----
-age_filter <-  "1574" # "3069"
+source("global.R")
 loc <- "Italy"
+slapnea_prevalence_female
+slapnea_prevalence_male
+
+##  Re-calculate sleep apnea (moderate/severe) prevalences per gender including slider inputs
+dosa <- osanew
+dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate-Severe"] <- slapnea_prevalence_female / 100
+dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate-Severe"] <- slapnea_prevalence_male / 100
+dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
+dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
+dosa$rate[dosa$gender == "Female" & dosa$var=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
+dosa$rate[dosa$gender == "Male" & dosa$var=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
+
+## Causes prevalences simple table ----
+prevalences_simple <- prev_simple %>% 
+  filter(location_name == loc) %>% 
+  group_by(condition) %>% 
+  mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% 
+  data.frame()
+## Causes Prevalences for the selected country and age group -----
 prevalences <- prev %>% 
-    filter(location_name == loc & age_group == age_filter) %>% ## changed
+    filter(location_name == loc) %>% ## changed
     mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>%
     data.frame()
-head(prevalences)
-
+# head(prevalences)
+## Join prevalences simpe and prevalences
+d <- prevalences_simple %>% 
+  left_join(prevalences %>% select(condition, OSA_severity, gender, RR, OR), by = "condition") %>% 
+  ## cases which has osa_severity = Overall to moderate-severe
+  mutate(OSA_severity=ifelse(OSA_severity == "Overall", "Moderate-Severe",OSA_severity))
 
 ## OSA value (sleep apnea prevalence) -----
-osa_value <- osa$rate[osa$gender == "Both" & osa$var == "Moderate-Severe"] # osa value from the table armeni
+# osa_value <- osa$rate[osa$gender == "Both" & osa$var == "Moderate-Severe"] # osa value from the table armeni
+d <- d %>% 
+  left_join(osanew %>% filter(location_name == loc) %>%  rename(OSA_severity = var), by = c("OSA_severity", "gender"))
 
 
 ## Core of calculus part 1 ----
 ## Calculate prevalent cases and costs per conditions
-prevalences %>% 
-    filter(location_name == loc) %>%
+d %>% 
+    # filter(location_name == loc) %>%
     mutate(
       ## PAF calculation for Risk Ratio or Odds Ratio:
-      PAFRR = ifelse(!is.na(RR), (osa_value * (RR - 1) / (osa_value * (RR - 1) + 1)), NA), 
-      PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osa_value), NA),
+      PAFRR = ifelse(!is.na(RR), (rate * (RR - 1) / (rate * (RR - 1) + 1)), NA), 
+      PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, rate), NA),
       PAF = ifelse(is.na(PAFOR), PAFRR, PAFOR),
       ## TODO extra rivit
       
@@ -36,9 +51,9 @@ prevalences %>%
       prevalent_cases = prevalence * pop_both, 
       prevalent_cases_influenced_osa = PAF * prevalent_cases,
       ## Costs per conditions
-      direct_cost = prevalent_cases_influenced_osa * annual_direct_healthcare_cost,
-      direct_non_healthcare_cost = prevalent_cases_influenced_osa * annual_direct_nonhealthcare_cost,
-      productivity_lost_cost = prevalent_cases_influenced_osa * annual_productivity_losses_cost
+      direct_cost = prevalent_cases_influenced_osa * direct_healthcare_cost,
+      direct_non_healthcare_cost = prevalent_cases_influenced_osa * direct_nonhealthcare_cost,
+      productivity_lost_cost = prevalent_cases_influenced_osa * productivity_losses_cost
     ) %>%
     mutate(direct_cost = ifelse(is.na(direct_cost), 0 , direct_cost),
            direct_non_healthcare_cost = ifelse(is.na(direct_non_healthcare_cost), 0 , direct_non_healthcare_cost),

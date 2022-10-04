@@ -5,7 +5,6 @@ shinyServer(function(input, output, session) {
   observe({
     query <- parseQueryString(session$clientData$url_search)
     if (!is.null(query[['location_name']])) {
-      # updateTextInput(session, "InputLabel_A", value = )
       updateSelectInput(session, "location", selected = query[['location_name']])
     }
   })
@@ -15,41 +14,40 @@ shinyServer(function(input, output, session) {
     pop %>% 
       filter(location_name == input$location) %>% 
       mutate(
-        pop_both = ifelse(input$osa_selected == "Fixed, based on Italy", pop_1574_both, pop_3069_both),
-        pop_female = ifelse(input$osa_selected == "Fixed, based on Italy", pop_1574_female, pop_3069_female),
-        pop_male = ifelse(input$osa_selected == "Fixed, based on Italy", pop_1574_male, pop_3069_male)
+        pop_both = pop_1574_both,
+        pop_female = pop_1574_female,
+        pop_male = pop_1574_male
       )
   })
 
-  ## Causes Prevalences for the selected country and age group -----
+  ## Causes Prevalences  -----
   prevalences <- reactive({
-    age_filter <- ifelse(input$osa_selected == "Fixed, based on Italy", "1574", "3069")
     prev %>% 
-      filter(location_name == input$location & age_group == age_filter) %>% 
+      filter(location_name == input$location) %>% 
       group_by(condition) %>% 
-      mutate(prevalence = ifelse(age_filter == "1574", prevalence_base_italy, ifelse(is.na(ihme), prevalence_base_italy, ihme))) %>% ## condition prevalence first condition Armeni/Benjafield, second if ihme data available.
-      # mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% # condition prevalences comes from ihme, if available
+      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% # condition prevalences comes from ihme, if available
       data.frame()
   })
   
-  ## this is new, simple view for hottable
+  ## Causes prevalences simple table ----
   prevalences_simple <- reactive({
-    age_filter <- ifelse(input$osa_selected == "Fixed, based on Italy", "1574", "3069")
     prev_simple %>% 
-      filter(location_name == input$location & age_group == age_filter) %>% 
+      filter(location_name == input$location ) %>% 
       group_by(condition) %>% 
-      mutate(prevalence = ifelse(age_filter == "1574", prevalence_base_italy, ifelse(is.na(ihme), prevalence_base_italy, ihme))) %>% ## condition prevalence first condition Armeni/Benjafield, second if ihme data available.
-      # mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% # condition prevalences comes from ihme, if available
+      mutate(prevalence = ifelse(is.na(ihme), prevalence_base_italy, ihme)) %>% # condition prevalences comes from ihme, if available
       data.frame()
   })
   
   ## OSA prevalences -----
   osa_table <- reactive({
     if(input$osa_selected == "Fixed, based on Italy"){
-      d <- osa
+      d <- osa 
     }else{
-      d <- osanew %>% filter(location_name == input$location)
+      d <- osanew %>% 
+        filter(location_name == input$location) 
     }
+    d <- d %>% 
+      select(OSA_severity, gender, rate)
     return(d)
   })
   
@@ -60,7 +58,7 @@ shinyServer(function(input, output, session) {
   observeEvent(toListen() ,{
     ## Female slider update
     val_female <- osa_table() %>% 
-      filter(gender == "Female" & (var == "Moderate-Severe") ) %>% 
+      filter(gender == "Female" & (OSA_severity == "Moderate-Severe") ) %>% 
       group_by(1) %>% 
       summarise(rate = sum(rate)) 
     val_female <- val_female$rate * 100
@@ -72,7 +70,7 @@ shinyServer(function(input, output, session) {
     )
     ## Male Slider update
     val_male <- osa_table() %>%
-      filter(gender == "Male" & (var == "Moderate-Severe") ) %>%
+      filter(gender == "Male" & (OSA_severity == "Moderate-Severe") ) %>%
       group_by(1) %>%
       summarise(rate = sum(rate))
     val_male <- val_male$rate * 100
@@ -84,54 +82,64 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  ## OSA value (sleep apnea prevalence) -----
-  osa_value <- reactive({
-    # val <- osa_table()$rate[osa_table()$gender == "Both" & osa_table()$var == "Moderate-Severe"] # osa value from the table
-    ## Value is affected by gender prevalence and gives total prevalence of Sleep Apnea
-    males = input$slapnea_prevalence_male/100 * population()$pop_male 
-    females = input$slapnea_prevalence_female/100 * population()$pop_female
-    val <- (males + females) / population()$pop_both
-    return(val)
-  })
-  
   ## Core of calculus part 1 ----
   ## prevalent cases, prevalent cases influences by OSA, total costs and money correction
   calc_total = reactive({
-
-    ## Get original data and enchance it with hot table
-    ## Combine simple table and wider table 
+   
+    ## OSA-table and re-calculus
+    dosa <- osa_table()
+    ##  Re-calculate sleep apnea (moderate/severe) prevalences per gender including slider inputs
+    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
+    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
+    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
+    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
+    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
+    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
+    ## TODO add osa_value miixed with moderate-severe sliider value, add Both values.
+    # dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Mild"] <-   1 * (input$slapnea_prevalence_male / 100)
+    # dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Mild"] <-   1 * (input$slapnea_prevalence_male / 100)
+    # dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate-Severe"] <- (input$slapnea_prevalence_female / 100 ) + ()
+    # dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate"] 
+    # dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Severe"] 
+    # dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Mild"] <-   1 * (input$slapnea_prevalence_male / 100)
+    
+    ## Get original data and update it with hot table input
     d <- prevalences_simple() %>% 
-      rows_update(hot_to_r(input$hot), by = "condition") %>% 
-      mutate(OR = NULL,
-             RR = NULL
-             )
+      rows_update(hot_to_r(input$hot), by = "condition") 
+    ## Combine simple table and wider table 
     d <- prevalences() %>% 
-      select(condition, OSA_severity, RR, OR) %>% 
-      left_join(d, by = "condition") 
+      select(condition, OSA_severity, gender, RR, OR) %>% 
+      left_join(d, by = "condition") %>% 
+      mutate(OSA_severity=ifelse(OSA_severity == "Overall", "Moderate-Severe", OSA_severity))
+    
+    ## Add OSA value (sleep apnea prevalence) TODO now this is only Benjafield values
+    d <- d %>% 
+      left_join(dosa,  by = c("OSA_severity", "gender"))
     
     ## Calculate prevalent cases and costs per conditions
-    d %>% 
-      filter(location_name == input$location) %>%
+    d <- d %>% 
+      # filter(location_name == input$location) %>%
       mutate(
         ## PAF calculation for Risk Ratio or Odds Ratio:
-        PAFRR = ifelse(!is.na(RR), (osa_value() * (RR - 1) / (osa_value() * (RR - 1) + 1)), NA),
-        PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osa_value()), NA),
-        PAF = ifelse(is.na(PAFOR), PAFRR, PAFOR),
-        ## Prevalents per conditions
-        prevalent_cases = prevalence * pop_both, 
+        PAFRR = ifelse(!is.na(RR), (rate * (RR - 1) / (rate * (RR - 1) + 1)), NA),
+        PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, rate), NA),
+        PAF = ifelse(is.na(PAFOR), ifelse(!is.na(PAFRR), PAFRR, 0), PAFOR),
+        ## Prevalents per conditions TODO gender specific!
+        prevalent_cases = ifelse(gender=="Both", prevalence * pop_both, ifelse(gender=="Female", prevalence * pop_female, prevalence * pop_male)), 
         prevalent_cases_influenced_osa = PAF * prevalent_cases,
         ## Costs per conditions
-        direct_cost = prevalent_cases_influenced_osa * annual_direct_healthcare_cost,
-        direct_non_healthcare_cost = prevalent_cases_influenced_osa * annual_direct_nonhealthcare_cost,
-        productivity_lost_cost = prevalent_cases_influenced_osa * annual_productivity_losses_cost
+        direct_cost = prevalent_cases_influenced_osa * direct_healthcare_cost,
+        direct_non_healthcare_cost = prevalent_cases_influenced_osa * direct_nonhealthcare_cost,
+        productivity_lost_cost = prevalent_cases_influenced_osa * productivity_losses_cost
       ) %>%
       mutate(direct_cost = ifelse(is.na(direct_cost), 0 , direct_cost),
              direct_non_healthcare_cost = ifelse(is.na(direct_non_healthcare_cost), 0 , direct_non_healthcare_cost),
              productivity_lost_cost = ifelse(is.na(productivity_lost_cost), 0 , productivity_lost_cost),
-             total_costs = direct_cost + direct_non_healthcare_cost + productivity_lost_cost) -> dplot
+             total_costs = direct_cost + direct_non_healthcare_cost + productivity_lost_cost) 
+    
     ## Make money correction if needed
     if(input$money_index == "EuroStat '19"){
-      dplot <- dplot %>% 
+      d <- d %>% 
         left_join(money_correction, by = "location_name") %>% 
         mutate(corrected = ifelse(is.na(index), FALSE, TRUE),
                index = ifelse(is.na(index), 1, index),
@@ -140,7 +148,7 @@ shinyServer(function(input, output, session) {
                productivity_lost_cost = productivity_lost_cost * index,
                total_costs = total_costs * index) 
     }
-    return(dplot)
+    return(d)
     })
     
   ## Core of calculus part 2 ----
@@ -148,12 +156,14 @@ shinyServer(function(input, output, session) {
       ## OSA-table and re-calculus
       dosa <- osa_table()
       ##  Re-calculate sleep apnea (moderate/severe) prevalences per gender including slider inputs
-      dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
-      dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
-      dosa$rate[dosa$gender == "Female" & dosa$var=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
-      dosa$rate[dosa$gender == "Male" & dosa$var=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
-      dosa$rate[dosa$gender == "Female" & dosa$var=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
-      dosa$rate[dosa$gender == "Male" & dosa$var=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
+      dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
+      dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
+      dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
+      dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
+      dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
+      dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
+      
+      
       
       ## Calculate costs (total & patient) per locations
       calc_total() %>%
@@ -163,8 +173,8 @@ shinyServer(function(input, output, session) {
                   productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
         mutate(
           ## OSA absolute values with separated moderate/severe calculation
-          absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Female"]) + (pop_female * dosa$rate[dosa$var == "Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$var == "Moderate" & dosa$gender == "Male"]) + (pop_male * dosa$rate[dosa$var == "Severe" & dosa$gender == "Male"])),
-          absolute_value_mild = ( pop_female * dosa$rate[dosa$var == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$var == "Mild" & dosa$gender == "Male"] ),
+          absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Male"])), 
+          absolute_value_mild = ( pop_female * dosa$rate[dosa$OSA_severity == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$OSA_severity == "Mild" & dosa$gender == "Male"] ),
           ## Costs per patients
           patient_direct_cost = direct_cost / absolute_value_severe_moderate,
           patient_nonhealthcare_cost = direct_non_healthcare_cost / absolute_value_severe_moderate,
@@ -178,8 +188,7 @@ shinyServer(function(input, output, session) {
   ## Hot table output ----
   output$hot <- renderRHandsontable({
     rhandsontable(
-      # data = prevalences()[, c("condition", "OR", "RR", "prevalence", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")], ## this is new, tried simple table
-      data = prevalences_simple()[, c("condition", "prevalence", "annual_direct_healthcare_cost", "annual_direct_nonhealthcare_cost", "annual_productivity_losses_cost")],
+      data = prevalences_simple()[, c("condition", "prevalence", "direct_healthcare_cost", "direct_nonhealthcare_cost", "productivity_losses_cost")],
       rowHeaders = NULL) %>% 
       hot_col("condition", readOnly = TRUE) %>%
       hot_col("prevalence", format = "0.00000%")
@@ -193,8 +202,8 @@ shinyServer(function(input, output, session) {
     calc_total() %>% 
       mutate(
         pop_both = round(pop_both, 0), 
-        prevalent_cases = prevalent_cases,#round(prevalent_cases, 0), 
-        prevalent_cases_influenced_osa = prevalent_cases_influenced_osa,#round(prevalent_cases_influenced_osa, 0), 
+        prevalent_cases = prevalent_cases, #round(prevalent_cases, 0), 
+        prevalent_cases_influenced_osa = prevalent_cases_influenced_osa, #round(prevalent_cases_influenced_osa, 0), 
         direct_cost = round(direct_cost, 0), 
         direct_non_healthcare_cost = round(direct_non_healthcare_cost, 0), 
         productivity_lost_cost = round(productivity_lost_cost, 0), 
@@ -202,7 +211,7 @@ shinyServer(function(input, output, session) {
         total_costs = round(total_costs, 0),
         total_cost_per_patient = round(total_costs / abs_moderate_severe_pop, 0) 
       ) %>% 
-      select(location_name, condition, prevalence, OR, RR, PAF, pop_both, prevalent_cases, prevalent_cases_influenced_osa, annual_direct_healthcare_cost, annual_direct_nonhealthcare_cost, annual_productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
+      select(location_name, condition, prevalence, OSA_severity, OR, RR, PAF, pop_both, prevalent_cases, prevalent_cases_influenced_osa, direct_healthcare_cost, direct_nonhealthcare_cost, productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
   })
   
   output$downloadData <- downloadHandler(
@@ -298,7 +307,6 @@ shinyServer(function(input, output, session) {
              fill = "Cost type")
       
       ## Population plot
-      age_group <- ifelse(input$osa_selected == "Fixed, based on Italy", "15-74", "30-69")
       dpop <- popu_info %>% 
         filter(location_name == input$location) %>% 
         mutate(
@@ -313,7 +321,7 @@ shinyServer(function(input, output, session) {
         geom_label(aes(x=reorder(name, -value), y=value, label = paste0(name, " \n ", format(round(value,-2), big.mark = ",")))) +
         scale_fill_brewer(palette="Set3") +
         scale_y_continuous(limit = c(0, max(dpop$value) * 1.1)) +
-        labs(x="", y="", subtitle = paste0("Population (Total / ", age_group, " yrs / Affected)")) +
+        labs(x="", y="", subtitle = "Population (Total / 15-74 yrs / Affected)") +
         theme_minimal() +
         theme(legend.position = "none") 
       
