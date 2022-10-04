@@ -24,20 +24,11 @@ shinyUI(fluidPage(
            downloadButton("downloadPlot", "Download the plot as png")),
   ),
   fluidRow(
-    # tabsetPanel(type = "tabs",
-                # tabPanel("Main",
-                         column(7,
-                                rHandsontableOutput("hot")
-                         ), 
-                         column(5,
-                                plotOutput("plot")
-                         )
-                #),
-                # tabPanel("Summary",
-                #          column(7,
-                #                 DT::dataTableOutput("summary")
-                #          )
-                # ))
-    
+    column(7,
+           rHandsontableOutput("hot")
+    ), 
+    column(5,
+           plotOutput("plot")
+    )
   )
 ))
