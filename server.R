@@ -14,7 +14,7 @@ shinyServer(function(input, output, session) {
     pop %>% 
       filter(location_name == input$location) %>% 
       mutate(
-        ## TODO change original data to these names.
+        ## TODO change original data to these names. Also popu_info could be added to this data set.
         pop_both = pop_1574_both,
         pop_female = pop_1574_female,
         pop_male = pop_1574_male
@@ -57,7 +57,7 @@ shinyServer(function(input, output, session) {
         filter(location_name == input$location) 
     }
     d <- d %>% 
-      select(OSA_severity, gender, rate)
+      select(OSA_severity, gender, osa_rate)
     return(d)
   })
   
@@ -67,18 +67,18 @@ shinyServer(function(input, output, session) {
   osa_estimated <- reactive({
     dosa <- osa_table()
     ## Fixed multiplier values are calculated from original Armeni article table.
-    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
-    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
-    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
-    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
-    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
-    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
-    dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Mild"] <- (input$slapnea_prevalence_male / 100) / 1.44
-    dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Mild"] <- (input$slapnea_prevalence_female / 100) / 0.6206897
-    dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate-Severe"] <- (dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] * population()$pop_female + dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] * population()$pop_male) / population()$pop_both
-    dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate"] <- (dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] * population()$pop_female + dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] * population()$pop_male) / population()$pop_both
-    dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Severe"] <- (dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] * population()$pop_female + dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] * population()$pop_male) / population()$pop_both
-    dosa$rate[dosa$gender == "Both" & dosa$OSA_severity=="Mild"] <- (dosa$rate[dosa$gender == "Female" & dosa$OSA_severity=="Mild"] * population()$pop_female + dosa$rate[dosa$gender == "Male" & dosa$OSA_severity=="Mild"] * population()$pop_male) / population()$pop_both
+    dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_female / 100
+    dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] <- 0.5342 * (input$slapnea_prevalence_female / 100)
+    dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] <- 0.4658 * (input$slapnea_prevalence_female / 100)
+    dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] <- input$slapnea_prevalence_male / 100
+    dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] <-   0.4004  * (input$slapnea_prevalence_male / 100)
+    dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] <-   0.5996 * (input$slapnea_prevalence_male / 100)
+    dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Mild"] <- (input$slapnea_prevalence_male / 100) / 1.44
+    dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Mild"] <- (input$slapnea_prevalence_female / 100) / 0.6206897
+    dosa$osa_rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate-Severe"] <- (dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate-Severe"] * population()$pop_female + dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate-Severe"] * population()$pop_male) / population()$pop_both
+    dosa$osa_rate[dosa$gender == "Both" & dosa$OSA_severity=="Moderate"] <- (dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Moderate"] * population()$pop_female + dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Moderate"] * population()$pop_male) / population()$pop_both
+    dosa$osa_rate[dosa$gender == "Both" & dosa$OSA_severity=="Severe"] <- (dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Severe"] * population()$pop_female + dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Severe"] * population()$pop_male) / population()$pop_both
+    dosa$osa_rate[dosa$gender == "Both" & dosa$OSA_severity=="Mild"] <- (dosa$osa_rate[dosa$gender == "Female" & dosa$OSA_severity=="Mild"] * population()$pop_female + dosa$osa_rate[dosa$gender == "Male" & dosa$OSA_severity=="Mild"] * population()$pop_male) / population()$pop_both
     ## COMPARED TO FIXED ITALY VALUES AND ITS OK!
   return(dosa)
   })
@@ -92,8 +92,8 @@ shinyServer(function(input, output, session) {
     val_female <- osa_table() %>% 
       filter(gender == "Female" & (OSA_severity == "Moderate-Severe") ) %>% 
       group_by(1) %>% 
-      summarise(rate = sum(rate)) 
-    val_female <- val_female$rate * 100
+      summarise(osa_rate = sum(osa_rate)) 
+    val_female <- val_female$osa_rate * 100
     ## Update
     updateSliderInput(
       session = session,
@@ -104,8 +104,8 @@ shinyServer(function(input, output, session) {
     val_male <- osa_table() %>%
       filter(gender == "Male" & (OSA_severity == "Moderate-Severe") ) %>%
       group_by(1) %>%
-      summarise(rate = sum(rate))
-    val_male <- val_male$rate * 100
+      summarise(osa_rate = sum(osa_rate))
+    val_male <- val_male$osa_rate * 100
     ## Update
     updateSliderInput(
       session = session,
@@ -125,7 +125,7 @@ shinyServer(function(input, output, session) {
       select(condition, OSA_severity, gender, RR, OR) %>% 
       left_join(d, by = "condition") %>% 
       mutate(OSA_severity=ifelse(OSA_severity == "Overall", "Moderate-Severe", OSA_severity))
-    ## Add OSA 'rate' (sleep apnea prevalence) 
+    ## Add OSA 'osa_rate' (sleep apnea prevalence) 
     dosa <- osa_estimated() # OSA-table with estimated values from user input
     d <- d %>% 
       left_join(dosa,  by = c("OSA_severity", "gender"))
@@ -134,8 +134,8 @@ shinyServer(function(input, output, session) {
     d <- d %>% 
       mutate(
         ## PAF calculation for Risk Ratio or Odds Ratio:
-        PAFRR = ifelse(!is.na(RR), (rate * (RR - 1) / (rate * (RR - 1) + 1)), NA),
-        PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, rate), NA),
+        PAFRR = ifelse(!is.na(RR), (osa_rate * (RR - 1) / (osa_rate * (RR - 1) + 1)), NA),
+        PAFOR = ifelse(!is.na(OR), paf_or(OR, prevalence, osa_rate), NA),
         PAF = ifelse(is.na(PAFOR), ifelse(!is.na(PAFRR), PAFRR, 0), PAFOR),
         ## Prevalents per conditions 
         prevalent_cases = ifelse(gender=="Both", prevalence * pop_both, ifelse(gender=="Female", prevalence * pop_female, prevalence * pop_male)), 
@@ -175,8 +175,8 @@ shinyServer(function(input, output, session) {
                   productivity_lost_cost = sum(productivity_lost_cost, na.rm = T)) %>%
         mutate(
           ## OSA absolute values with separated moderate/severe calculation (OSA population to divide costs to).
-          absolute_value_severe_moderate = ( (pop_female * dosa$rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Female"]) + (pop_male * dosa$rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Male"])), 
-          absolute_value_mild = (pop_female * dosa$rate[dosa$OSA_severity == "Mild" & dosa$gender == "Female"] + pop_male * dosa$rate[dosa$OSA_severity == "Mild" & dosa$gender == "Male"] ),
+          absolute_value_severe_moderate = ( (pop_female * dosa$osa_rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Female"]) + (pop_male * dosa$osa_rate[dosa$OSA_severity == "Moderate-Severe" & dosa$gender == "Male"])), 
+          absolute_value_mild = (pop_female * dosa$osa_rate[dosa$OSA_severity == "Mild" & dosa$gender == "Female"] + pop_male * dosa$osa_rate[dosa$OSA_severity == "Mild" & dosa$gender == "Male"] ),
           ## Costs per patients
           patient_direct_cost = direct_cost / absolute_value_severe_moderate,
           patient_nonhealthcare_cost = direct_non_healthcare_cost / absolute_value_severe_moderate,
@@ -209,7 +209,7 @@ shinyServer(function(input, output, session) {
         total_costs = round(total_costs, 0),
         total_cost_per_patient = round(total_costs / abs_moderate_severe_pop, 0) 
       ) %>% 
-      select(location_name, condition, prevalence, OSA_severity, OR, RR, PAF, rate, pop_both, prevalent_cases, prevalent_cases_influenced_osa, direct_healthcare_cost, direct_nonhealthcare_cost, productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
+      select(location_name, condition, cause_name, prevalence, OSA_severity, OR, RR, PAF, osa_rate, pop_both, prevalent_cases, prevalent_cases_influenced_osa, direct_healthcare_cost, direct_nonhealthcare_cost, productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
   })
   ## Download handler
   output$downloadData <- downloadHandler(
