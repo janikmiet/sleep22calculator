@@ -130,6 +130,10 @@ shinyServer(function(input, output, session) {
     d <- d %>% 
       left_join(dosa,  by = c("OSA_severity", "gender"))
     
+    ## Hard coding change, because Armeni used population of daytime sleepiness, we need to use fixed osa rate. This is  estimated.
+    d$osa_rate[d$condition == "Car accidents"] <- 0.06885
+    d$osa_rate[d$condition == "Work accidents"] <- 0.06885
+    
     ## Calculate prevalent cases and costs per conditions
     d <- d %>% 
       mutate(

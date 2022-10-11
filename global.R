@@ -31,7 +31,7 @@ prev_simple <- arrow::read_parquet("data/prevalences_simple.parquet")
 ## Give only decimals in parameters
 # OR = Odds Ratio
 # PD = having a disease, prevalence
-# PE = exposed, sleep apnea prevalence
+# PE = exposed, sleep apnea prevalence / TODO accidents muuta  prevalenssia
 # (PE_ =  unexposed)
 paf_or <- function(OR, PD, PE){
   PD = PD * 100
@@ -43,3 +43,7 @@ paf_or <- function(OR, PD, PE){
   PAF = 1 - ((100 * VALUE) / PD)
   return(PAF)
 }
+
+
+
+
