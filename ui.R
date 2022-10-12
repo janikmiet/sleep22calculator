@@ -4,7 +4,7 @@ shinyUI(fluidPage(
   titlePanel("Sleep Apnea Costs Top-down Calculator"),
   fluidRow(
     column(12,
-           helpText("Select a country to get base values for calculating the costs. Sleep Apnea prevalences are from Benjafield et al. article (population 30-69 yrs). You can input new gender specific sleep apnea prevalences with the corresponding slider input. Condition prevalence values are country specific from IHME dataset. Condition prevalences which are not available from IHME dataset are base values from Italy (Armeni et al.) as well as condition annual costs. You can modify prevalences and costs values to get more specific calculation of the sleep apnea costs. Calculation does not take in account of total healthcare service costs if sleep apnea prevalence rises."))
+           helpText("Select a country to get base values for calculating the costs. Sleep Apnea prevalences are from Benjafield et al. article. You can set new gender specific sleep apnea prevalences with the slider inputs. Condition prevalence values are country specific from IHME dataset. Condition prevalences which are not available from IHME dataset are base values from Italy (Armeni et al.) as well as condition annual costs. You can modify prevalences and costs values to get more specific calculation of the sleep apnea costs. Calculation does not take in account of total healthcare service costs if sleep apnea prevalence rises."))
   ),
   fluidRow(
     column(2,

@@ -1,24 +1,19 @@
+# PAFOR unit tests
 source("global.R")
-
-## PAFOR yksikkotesti -----
-
-## testi accidents ----
-
+## accidents ----
 ## Car accidents // PAF 8.2 %
 paf_or(2.43, 0.005, 0.063)
 ## OSA 8.18 %
-
 ## Work accidents 5.6%
 paf_or(1.78, 0.001, 0.076)
 ## OSA 5.59
-
 ## Day Time Sleepiness OSA 0.19
 paf_or(1.78, 0.001, 0.19)
-
-## KA OSA 4.2 %
+## Mean estimation
 (8.18+5.59)/2
 6.885
-## Essential hypertension, OSA: mild , 
+
+## Essential hypertension, OSA: mild ----
 # prevalence 0.303
 # OR 1.18
 # PAF 0.014306
