@@ -16,7 +16,6 @@ prev <- arrow::read_parquet("data/prevalences.parquet")
 osa <- arrow::read_parquet("data/osa.parquet")
 osanew <- arrow::read_parquet("data/osanew.parquet")
 pop <- arrow::read_parquet("data/pop.parquet")
-popu_info <- arrow::read_parquet("data/popu_info.parquet")
 money_correction <- arrow::read_parquet("data/money_correction.parquet")
 locations <- prev %>% 
   group_by(location_name) %>% 

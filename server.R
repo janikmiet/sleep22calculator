@@ -12,13 +12,7 @@ shinyServer(function(input, output, session) {
   ## Population -----
   population <- reactive({
     pop %>% 
-      filter(location_name == input$location) %>% 
-      mutate(
-        ## TODO change original data to these names. Also popu_info could be added to this data set.
-        pop_both = pop_1574_both,
-        pop_female = pop_1574_female,
-        pop_male = pop_1574_male
-      )
+      filter(location_name == input$location & ages == "15-74")
   })
 
   ## Causes table -----
@@ -304,8 +298,8 @@ shinyServer(function(input, output, session) {
              fill = "Cost type")
       
       ## Population plot
-      dpop <- popu_info %>% 
-        filter(location_name == input$location) %>% 
+      dpop <- pop %>% 
+        filter(location_name == input$location & ages == "total") %>% 
         mutate(
           Total = pop_both,
           Selected = population()$pop_both,
