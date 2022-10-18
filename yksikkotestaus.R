@@ -1,17 +1,20 @@
 # PAFOR unit tests
 source("global.R")
 ## accidents ----
-## Car accidents // PAF 8.2 %
-paf_or(2.43, 0.005, 0.063)
-## OSA 8.18 %
-## Work accidents 5.6%
-paf_or(1.78, 0.001, 0.076)
-## OSA 5.59
+## Car accidents // PAF in article 8.2 %
+## What numbers we need to use to get that?
+paf_or(2.43, 0.005, 0.063) # PAF 8.18 %
+## --> Sleep apnea prevalence: 6,3
+
+## Work accidents // PAF in article 5.6%
+paf_or(1.78, 0.001, 0.076) # PAF 5.59 
+## --> Sleep apnea prevalence: 7,6
+
 ## Day Time Sleepiness OSA 0.19
 paf_or(1.78, 0.001, 0.19)
 ## Mean estimation
-(8.18+5.59)/2
-6.885
+(0.063+0.076)/2
+0.0695
 
 ## Essential hypertension, OSA: mild ----
 # prevalence 0.303
