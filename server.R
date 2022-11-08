@@ -199,7 +199,8 @@ shinyServer(function(input, output, session) {
   makeQuery <- reactive({
     calc_total() %>% 
       mutate(
-        pop_both = round(pop_both, 0), 
+        # pop_both = round(pop_both, 0), 
+        pop = round(ifelse(gender == "Male", pop_male, ifelse(gender == "Female", pop_female, pop_both)), 0), 
         prevalent_cases = prevalent_cases, #round(prevalent_cases, 0), 
         prevalent_cases_influenced_osa = prevalent_cases_influenced_osa, #round(prevalent_cases_influenced_osa, 0), 
         direct_cost = round(direct_cost, 0), 
@@ -209,7 +210,7 @@ shinyServer(function(input, output, session) {
         total_costs = round(total_costs, 0),
         total_cost_per_patient = round(total_costs / abs_moderate_severe_pop, 0) 
       ) %>% 
-      select(location_name, condition, cause_name, prevalence, OSA_severity, OR, RR, PAF, osa_rate, pop_both, prevalent_cases, prevalent_cases_influenced_osa, direct_healthcare_cost, direct_nonhealthcare_cost, productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
+      select(location_name, condition, cause_name, prevalence, OSA_severity, OR, RR, PAF, osa_rate, gender, pop, prevalent_cases, prevalent_cases_influenced_osa, direct_healthcare_cost, direct_nonhealthcare_cost, productivity_losses_cost,  direct_cost, direct_non_healthcare_cost, productivity_lost_cost, total_costs, total_cost_per_patient) 
   })
   ## Download handler
   output$downloadData <- downloadHandler(
