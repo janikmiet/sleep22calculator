@@ -1,45 +1,54 @@
-This short article describes data and methods used in sleep apnea top to
-down calculation. For more detailed playbook of the data and methods,
-read project notes at
-<https://research.janimiettinen.fi/material/sleep22/>.
+# Sleep Apnea Cost
 
-## Data
+**Authors:** Jani Miettinen, Ida Alakörkkö, Anna But & Reijo Sund.
+**Version:** 1.0 (2022-11-28).
+
+Sleep Apnea Cost calculator is an application which estimates cost of
+sleep apnea by the prevalences of medical conditions connected to sleep
+apnea. This project has received funding from the European Union’s
+Horizon 2020 research and innovation programme under grant agreement no.
+965417. This document describes data and methods used in sleep apnea top
+to down calculation. More detailed playbook of the project can be found
+at <https://research.janimiettinen.fi/material/sleep22/>.
+
+![](img/alllogos.png) <img src="img/uef.png" style="width:4.0%" />
+
+## Data Sources
 
 Sleep apnea prevalences, condition prevalences and population sizes are
-collected from different open data sources and from article tables. Used
-data sources are:
+collected from different open data sources and from article tables. Data
+sources are and collected variables are:
 
 1.  Global Health Data Exchange, IHME Data <http://ghdx.healthdata.org/>
-
--   population by age/gender
--   condition prevalences and mortalities
-
-1.  [Benjafield et al. (2019) *Estimation of the global prevalence and
+    -   population by age/gender
+    -   condition prevalences and mortalities
+2.  [Benjafield et al. (2019) *Estimation of the global prevalence and
     burden of obstructive sleep apnoea: a literature-based
     analysis*](https://pubmed.ncbi.nlm.nih.gov/31300334/)
-
--   OSA rates for different countries (30-69 years old population)
-
-1.  [Armeni et al. (2019) *Cost-of-illness study of Obstructive Sleep
-    Apnea Syndrome (OSAS) in
+    -   OSA rates for different countries (30-69 years old population)
+3.  Borsoi L, Armeni P, Donin G, Costa F, and Ferini-Strambi L. (2021)
+    *The invisible costs of obstructive sleep apnea (OSA): a
+    cost-of-illness analysis,* PLoS ONE, pp. 1–23, 2021, doi:
+    10.1371/journal.pone.0268677. & [Armeni et al. (2019)
+    *Cost-of-illness study of Obstructive Sleep Apnea Syndrome (OSAS) in
     Italy*](https://cergas.unibocconi.eu/sites/default/files/files/Cost-of-illness-study-of-Obstructive-Sleep-Apnea-Syndrome-%2528OSAS%2529-in-Italy_Report%25281%2529.pdf)
-
--   Condition Prevalences, OR and RR rates, annual costs
--   OSA rates
-
-1.  EuroStat <https://ec.europa.eu/eurostat>
-
--   Money index correction for xxxx countries
+    -   Condition Prevalences, OR and RR rates, annual costs
+    -   OSA rates
+4.  EuroStat <https://ec.europa.eu/eurostat>
+    -   Money index correction (2019) for 45 countries
 
 ## Cost Calculation
 
-Cost calculation works dynamically in calculator shiny app and in
-visualization cost are pre-calculated. There is small difference on cost
-( = tens of euros), which is caused by decimals and big population
-sizes. More detailed version of how the costs are calculated can be
-followed in
-[playbook](https://research.janimiettinen.fi/material/sleep22/) and
-original version is in Armeni et al. (2019) article.
+Costs are dynamically calculated in Sleep Apnea Calculator and in Map
+Visualization cost are pre-calculated. There is small difference on cost
+( = tens of euros) between application, which is caused by decimals and
+big population sizes. More detailed version of how the costs are
+calculated can be followed in [the project data
+playbook](https://research.janimiettinen.fi/material/sleep22/) and from
+the articles [The Economic Cost Of Obstructive Sleep Apnea - A
+Systematic Review](http://urn.fi/urn:nbn:fi:uef-20220894) and
+[Cost-of-illness study of Obstructive Sleep Apnea Syndrome (OSAS) in
+Italy](https://cergas.unibocconi.eu/sites/default/files/files/Cost-of-illness-study-of-Obstructive-Sleep-Apnea-Syndrome-%2528OSAS%2529-in-Italy_Report%25281%2529.pdf).
 
 ### Conditions and Population
 
@@ -80,7 +89,8 @@ dataset:
 <td style="text-align: left;">Cardiovascular mortality</td>
 <td style="text-align: center;">0.0010</td>
 <td style="text-align: center;">1023</td>
-<td style="text-align: center;">Other cardiovascular and circulatory diseases, mortality</td>
+<td style="text-align: center;">Other cardiovascular and circulatory
+diseases, mortality</td>
 <td style="text-align: center;">0.0000171</td>
 </tr>
 <tr class="odd">
@@ -101,7 +111,8 @@ dataset:
 <td style="text-align: left;">Diabetic kidney disease</td>
 <td style="text-align: center;">0.0150</td>
 <td style="text-align: center;">998</td>
-<td style="text-align: center;">Chronic kidney disease due to diabetes mellitus type 2</td>
+<td style="text-align: center;">Chronic kidney disease due to diabetes
+mellitus type 2</td>
 <td style="text-align: center;">0.0155526</td>
 </tr>
 <tr class="even">
@@ -115,14 +126,16 @@ dataset:
 <td style="text-align: left;">Metabolic syndrome</td>
 <td style="text-align: center;">0.3300</td>
 <td style="text-align: center;">619</td>
-<td style="text-align: center;">Endocrine, metabolic, blood, and immune disorders</td>
+<td style="text-align: center;">Endocrine, metabolic, blood, and immune
+disorders</td>
 <td style="text-align: center;">0.1600425</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Erectile dysfunction</td>
 <td style="text-align: center;">0.1000</td>
 <td style="text-align: center;">594</td>
-<td style="text-align: center;">Urinary diseases and male infertility</td>
+<td style="text-align: center;">Urinary diseases and male
+infertility</td>
 <td style="text-align: center;">0.1361221</td>
 </tr>
 <tr class="odd">
@@ -150,7 +163,8 @@ dataset:
 <td style="text-align: left;">Non-alcoholic fatty liver disease</td>
 <td style="text-align: center;">0.2050</td>
 <td style="text-align: center;">1028</td>
-<td style="text-align: center;">Total burden related to Non-alcoholic fatty liver disease (NAFLD)</td>
+<td style="text-align: center;">Total burden related to Non-alcoholic
+fatty liver disease (NAFLD)</td>
 <td style="text-align: center;">0.2262894</td>
 </tr>
 <tr class="odd">
@@ -212,13 +226,15 @@ each condition to match original base values:
 <tr class="even">
 <td style="text-align: left;">Metabolic syndrome</td>
 <td style="text-align: center;">0.330</td>
-<td style="text-align: center;">Endocrine, metabolic, blood, and immune disorders</td>
+<td style="text-align: center;">Endocrine, metabolic, blood, and immune
+disorders</td>
 <td style="text-align: center;">0.3300877</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Erectile dysfunction</td>
 <td style="text-align: center;">0.100</td>
-<td style="text-align: center;">Urinary diseases and male infertility</td>
+<td style="text-align: center;">Urinary diseases and male
+infertility</td>
 <td style="text-align: center;">0.1000163</td>
 </tr>
 <tr class="even">
@@ -230,23 +246,27 @@ each condition to match original base values:
 </tbody>
 </table>
 
-### OSA
+### Obstructive Sleep Apnea
 
-Obstructive Sleep Apnea prevalence values are from Benjafield et
+Obstructive Sleep Apnea (OSA) prevalence values are from Benjafield et
 al. article. In the article Benjafield et al. estimated sleep apnea
 prevalences for 30-69 years old population. We assume here that same
 percentages apply for the 15-74 population.
 
 In the calculator user can define obstructive sleep apnea prevalence
-(Moderate-Severe AHI>=15). This input value is used to estimate also the
-mild sleep apnea prevalence of the population by adjusting the value as
-it is presented in Armeni et al. article.
+(Moderate-Severe AHI&gt;=15). This input value is used to estimate also
+the mild sleep apnea prevalence of the population by adjusting the value
+as it is presented in Armeni et al. article.
 
-### PAF
+### Population Attributable Fraction
 
 PAF can be calculated by knowing the risk ratio or odds ratio and
 condition prevalence. Theory behind calculating PAF is presented in
-Armeni et al. p. 15.
+[Cost-of-illness study of Obstructive Sleep Apnea Syndrome (OSAS) in
+Italy](https://cergas.unibocconi.eu/sites/default/files/files/Cost-of-illness-study-of-Obstructive-Sleep-Apnea-Syndrome-%2528OSAS%2529-in-Italy_Report%25281%2529.pdf)
+p. 15. More detailed how PAF can be calculated using Odd Ratio can be
+found in [The Economic Cost Of Obstructive Sleep Apnea - A Systematic
+Review](http://urn.fi/urn:nbn:fi:uef-20220894) p.19.
 
 Example of calculating PAF for Type 2 diabetes with Risk Ratio:
 
@@ -295,7 +315,11 @@ Prevalence (OSA)
 *Annual costs (direct healthcare / direct non-healthcare / productivity
 loss)* = user input or values from Armeni et al. article
 
-## Sources
+## References
+
+Alakörkkö I. (2022) The Economic Cost Of Obstructive Sleep Apnea - A
+Systematic Review. Master Thesis in Medicine, University of Eastern
+Finland. Available: <http://urn.fi/urn:nbn:fi:uef-20220894>
 
 Armeni P, Borzoi L, Costa F, Donin G, and Gupta A. (2019)
 *Cost-of-illness study of Obstructive Sleep Apnea Syndrome (OSAS) in
@@ -308,3 +332,7 @@ Valentine K, Malhotra A. (2019) *Estimation of the global prevalence and
 burden of obstructive sleep apnoea: a literature-based analysis*. Lancet
 Respir Med. 2019 Aug;7(8):687-698. doi: 10.1016/S2213-2600(19)30198-5.
 Epub 2019 Jul 9
+
+Borsoi L, Armeni P, Donin G, Costa F, and Ferini-Strambi L. (2021) “The
+invisible costs of obstructive sleep apnea (OSA): a cost-of-illness
+analysis,” PLoS ONE, pp. 1–23, 2021, doi: 10.1371/journal.pone.0268677.

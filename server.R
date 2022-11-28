@@ -329,8 +329,8 @@ shinyServer(function(input, output, session) {
       ) 
       annotate_figure(figure, 
                       top = text_grob(label_title, color = "black", face = "bold", size = 16),
-                      bottom = text_grob("Data source: \n IHME, EuroStat, Armeni et al.", color = "blue",
-                                         hjust = 1, x = 1, face = "italic", size = 10))
+                      bottom = text_grob("Source: https://costs.sleeprevolution.eu/calculator/", color = "black",
+                                         hjust = 1, x = 1, face = "italic", size = 11))
     }
   })
   
