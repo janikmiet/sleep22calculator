@@ -1,5 +1,7 @@
 
 navbarPage(
+  
+  ## TESTING LOGO ON THE MENU
   title = div(
     div(
       id = "img-id",
