@@ -6,6 +6,7 @@ library(ggpubr)
 library(shiny)
 library(rhandsontable)
 library(data.table)
+library(markdown)
 
 options("shiny.useragg" = TRUE)
 options(scipen = 999)

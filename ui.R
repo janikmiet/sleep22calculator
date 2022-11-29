@@ -2,20 +2,20 @@
 navbarPage(
   
   ## TESTING LOGO ON THE MENU
-  title = div(
-    div(
-      id = "img-id",
-      # img(src = "img/alllogos.png")
-    ),
-    "Sleep Apnea Cost Calculator"
-  ),
+  # title = div(
+  #   div(
+  #     id = "img-id",
+  #     # img(src = "img/alllogos.png")
+  #   ),
+  #   "Sleep Apnea Cost Calculator"
+  # ),
   # theme = "bootstrap.css",
-  # title = "Sleep Apnea Cost Calculator", 
-  # id="nav",
-  tags$head(
-    # Include our custom CSS
-    includeCSS("styles.css"),
-  ),
+  title = "Sleep Apnea Cost Calculator",
+  id="nav",
+  # tags$head(
+  #   # Include our custom CSS
+  #   includeCSS("styles.css"),
+  # ),
   
   tabPanel("Calculator",
            fluidPage(
