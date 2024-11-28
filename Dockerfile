@@ -22,11 +22,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcdf-bin \
     libharfbuzz-dev \
     libfribidi-dev \
+    cmake \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Step 3: Install R packages needed for the app
-RUN R -e "install.packages(c('arrow', 'ggpubr', 'data.table', 'markdown', 'shiny', 'raster', 'leaflet', 'here', 'hrbrthemes', 'ggplot2', 'dplyr', 'tidyr', 'DT', 'rhandsontable'), dependencies = TRUE, repos='https://cloud.r-project.org/')"
 
+# Set a CRAN repository
+# https://cloud.r-project.org/
+
+ENV CRAN_REPO="http://cran.rstudio.com/" 
+RUN R -e "install.packages(c('arrow', 'data.table', 'markdown', 'shiny', 'raster', 'leaflet', 'here', 'hrbrthemes', 'ggplot2', 'dplyr', 'tidyr', 'DT', 'rhandsontable'), dependencies = TRUE, repos=Sys.getenv('CRAN_REPO'))"
+
+RUN R -e "options(repos = list(CRAN = Sys.getenv('CRAN_REPO'))); install.packages(c('tidyverse', 'ggpubr'), type = 'source');"
 
 # Create the shiny user and group
 RUN useradd -r -m shiny && \
