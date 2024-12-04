@@ -52,4 +52,4 @@ EXPOSE 3838
 
 # Step 7: Start Shiny Server
 #CMD ["/srv/shiny-server/app"]
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app', host = '0.0.0.0', port=3840)"]
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app', host = '0.0.0.0', port=3838)"]
