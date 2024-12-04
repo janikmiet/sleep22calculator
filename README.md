@@ -14,17 +14,18 @@ at <https://research.janimiettinen.fi/material/sleep22/>.*
 
 - Dockerhub image: <https://hub.docker.com/repository/docker/janikmiet/sleeprevolution_calculator/general>
 
+![](calculator.png)
 
-## Installation / App Launch
+# Installation / App Launch
 
-### Terminal App Run
+## Terminal App Run
 
 ```
 R -e "shiny::runApp('app/')"
 ```
 
 
-### Docker Image
+## Docker Image
 
 Use docker to launch app
 
@@ -33,7 +34,7 @@ docker build  --no-cache -t sleep22calculator .
 docker run --name shiny_sleep22calculator --rm -d -p 3838:3838 sleep22calculator
 ```
 
-### ShinyServer / rsconnect
+## ShinyServer / rsconnect
 
 Modify and use script `deploy.R`
 
